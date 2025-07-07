@@ -1,0 +1,10 @@
+2025-07-03 14:27:04,753 | api | INFO | API request: {'method': 'OPTIONS', 'path': '/auth/token', 'status_code': 200, 'duration': '0.000s', 'user_id': 'anonymous'}
+2025-07-03 14:44:57,342 | api | INFO | API request: {'method': 'OPTIONS', 'path': '/auth/token', 'status_code': 200, 'duration': '0.000s', 'user_id': 'anonymous'}
+2025-07-03 14:44:57,532 | security | WARNING | Security event: {'event_type': 'auth_success', 'details': {'facility_code': 'FACILITY-01'}, 'user_id': 'FACILITY-01'}
+2025-07-03 14:44:57,534 | api | INFO | API request: {'method': 'POST', 'path': '/auth/token', 'status_code': 200, 'duration': '0.191s', 'user_id': 'anonymous'}
+2025-07-03 14:45:13,220 | api | INFO | API request: {'method': 'GET', 'path': '/items', 'status_code': 200, 'duration': '0.005s', 'user_id': 'anonymous'}
+2025-07-03 14:45:13,224 | api | INFO | API request: {'method': 'GET', 'path': '/items', 'status_code': 200, 'duration': '0.002s', 'user_id': 'anonymous'}
+2025-07-03 14:45:20,407 | api | INFO | API request: {'method': 'GET', 'path': '/items', 'status_code': 200, 'duration': '0.003s', 'user_id': 'anonymous'}
+2025-07-03 14:45:20,411 | api | INFO | API request: {'method': 'GET', 'path': '/items', 'status_code': 200, 'duration': '0.002s', 'user_id': 'anonymous'}
+2025-07-03 14:45:26,256 | api | INFO | API request: {'method': 'GET', 'path': '/items', 'status_code': 200, 'duration': '0.003s', 'user_id': 'anonymous'}
+2025-07-03 14:45:26,260 | api | INFO | API request: {'method': 'GET', 'path': '/items', 'status_code': 200, 'duration': '0.002s', 'user_id': 'anonymous'}
