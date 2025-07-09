@@ -80,9 +80,14 @@ const RegisterScreen: React.FC = () => {
   const [classifications, setClassifications] = useState<any>({ categories: [] });
 
   useEffect(() => {
-    fetch('/item_classification.json')
+    fetch('./item_classification.json')
       .then(res => res.json())
-      .then(data => setClassifications(data));
+      .then(data => setClassifications(data))
+      .catch(error => {
+        console.error('分類データの読み込みに失敗しました:', error);
+        // エラー時のフォールバック処理
+        setClassifications({ categories: [] });
+      });
   }, []);
 
   const categories = classifications.categories;

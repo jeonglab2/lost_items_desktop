@@ -4,34 +4,40 @@
   "description": "拾得物管理システム フロントエンド",
   "main": "public/electron.js",
   "homepage": "./",
+  "author": "Matsushima-A-830",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "electron": "electron .",
-    "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && NODE_ENV=development electron .\"",
-    "electron-pack": "npm run build && electron-builder"
+    "electron-dev": "cross-env NODE_ENV=development electron .",
+    "electron-pack": "npm run build && electron-builder",
+    "dist": "npm run build && electron-builder --publish=never",
+    "build-exe": "npm run build && electron-builder --win portable --publish=never",
+    "build-portable": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win portable --publish=never"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-scripts": "5.0.1",
-    "typescript": "^4.9.5",
+    "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "electron": "^25.0.0",
-    "electron-builder": "^24.6.0",
-    "concurrently": "^8.0.0",
-    "wait-on": "^7.0.0",
     "axios": "^1.4.0",
+    "concurrently": "^8.0.0",
+    "python-shell": "^5.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "react-router-dom": "^6.14.0",
-    "@types/node": "^20.0.0"
+    "react-scripts": "5.0.1",
+    "typescript": "^4.9.5",
+    "wait-on": "^7.0.0"
   },
   "devDependencies": {
-    "tailwindcss": "^3.3.0",
     "autoprefixer": "^10.4.14",
-    "postcss": "^8.4.24"
+    "cross-env": "^7.0.3",
+    "electron": "^25.0.0",
+    "electron-builder": "^24.9.1",
+    "postcss": "^8.4.24",
+    "tailwindcss": "^3.3.0"
   },
   "browserslist": {
     "production": [
@@ -47,14 +53,54 @@
   },
   "build": {
     "appId": "com.lostitems.desktop",
-    "productName": "拾得物管理システム",
+    "productName": "Lost Items Management System",
     "directories": {
       "output": "dist"
     },
+    "forceCodeSigning": false,
     "files": [
       "build/**/*",
       "public/electron.js",
+      "public/preload.js",
       "node_modules/**/*"
-    ]
+    ],
+    "extraResources": [
+      {
+        "from": "../app",
+        "to": "app"
+      },
+      {
+        "from": "../backend",
+        "to": "backend"
+      },
+      {
+        "from": "../requirements.txt",
+        "to": "requirements.txt"
+      },
+      {
+        "from": "../backend/yolov8n.pt",
+        "to": "yolov8n.pt"
+      },
+      {
+        "from": "../docs",
+        "to": "docs"
+      },
+      {
+        "from": "./build",
+        "to": "build"
+      }
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "public/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "public/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "public/icon.png"
+    }
   }
-} 
+}

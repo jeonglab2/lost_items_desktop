@@ -25,7 +25,13 @@ class AIEngine:
         
         # YOLOモデルの初期化（物体検出用）
         try:
-            self.yolo_model = YOLO('yolov8n.pt')
+            # backendディレクトリのyolov8n.ptを参照
+            model_path = 'backend/yolov8n.pt'
+            if os.path.exists(model_path):
+                self.yolo_model = YOLO(model_path)
+            else:
+                logger.warning(f"YOLOモデルファイルが見つかりません: {model_path}")
+                self.yolo_model = None
         except Exception as e:
             logger.warning(f"YOLOモデルの読み込みに失敗: {e}")
             self.yolo_model = None
@@ -44,8 +50,14 @@ class AIEngine:
     def _load_classification_data(self) -> Dict:
         """分類定義ファイルを読み込み"""
         try:
-            with open('docs/eac_05_item_classification.json', 'r', encoding='utf-8') as f:
-                return json.load(f)
+            # 本番環境ではresources配下のファイルを参照
+            classification_file = 'docs/eac_05_item_classification.json'
+            if os.path.exists(classification_file):
+                with open(classification_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            else:
+                logger.warning(f"分類定義ファイルが見つかりません: {classification_file}")
+                return {"categories": []}
         except FileNotFoundError:
             logger.error("分類定義ファイルが見つかりません")
             return {"categories": []}

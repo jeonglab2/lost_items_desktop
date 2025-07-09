@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拾得物管理システム プロトタイプ v5.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .screen { display: none; }
+        .active-screen { display: flex; }
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .toast {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            color: white;
+            z-index: 1100;
+            transition: bottom 0.5s ease-in-out;
+        }
+        .toast.show {
+            bottom: 2rem;
+        }
+        .table-container {
+             max-height: calc(50vh - 120px);
+             overflow-y: auto;
+        }
+
+        /* Print-specific styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #label-preview-modal, #label-content, #label-content * {
+                visibility: visible;
+            }
+            #label-preview-modal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: auto;
+                background-color: white;
+                box-shadow: none;
+                border: none;
+            }
+             .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <!-- Container for the app -->
+    <div class="w-full max-w-7xl h-[90vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
+
+        <!-- Header -->
+        <header class="bg-gray-800 text-white p-4 flex justify-between items-center shadow-md z-10 no-print">
+            <h1 class="text-xl font-bold">拾得物管理システム (プロトタイプ)</h1>
+            <div id="header-info" class="text-right">
+                <p id="facility-name" class="font-semibold"></p>
+                <button id="logout-button" class="text-sm text-red-400 hover:text-red-300 hidden">&times; ログアウト</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow overflow-y-auto">
+
+            <!-- Auth Screen -->
+            <div id="auth-screen" class="screen flex-col items-center justify-center h-full p-8 bg-gray-50">
+                <div class="w-full max-w-sm p-8 bg-white rounded-lg shadow-md">
+                    <h2 class="text-2xl font-bold text-center text-gray-700 mb-6">施設認証</h2>
+                    <form id="auth-form">
+                        <div class="mb-4">
+                            <label for="facility-code" class="block text-gray-700 text-sm font-bold mb-2">施設コード</label>
+                            <input type="text" id="facility-code" value="FACILITY-01" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="mb-6">
+                            <label for="password" class="block text-gray-700 text-sm font-bold mb-2">パスワード</label>
+                            <input type="password" id="password" value="password" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-colors">認証</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Main Menu Screen -->
+            <div id="main-menu-screen" class="screen flex-col items-center justify-center h-full p-8 bg-gray-50">
+                 <h2 class="text-3xl font-bold text-gray-800 mb-10">メインメニュー</h2>
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-4xl">
+                     <button id="goto-register-btn" class="group flex flex-col items-center justify-center p-8 bg-white rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all">
+                        <svg class="w-16 h-16 text-blue-500 mb-4 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                         <span class="text-xl font-bold text-gray-700">新規拾得物登録</span>
+                         <p class="text-gray-500 mt-1 text-center">新しい拾得物を登録します。</p>
+                     </button>
+                     <button id="goto-list-btn" class="group flex flex-col items-center justify-center p-8 bg-white rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all">
+                        <svg class="w-16 h-16 text-green-500 mb-4 group-hover:text-green-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                         <span class="text-xl font-bold text-gray-700">拾得物一覧・検索</span>
+                         <p class="text-gray-500 mt-1 text-center">登録済みの拾得物を検索・管理します。</p>
+                     </button>
+                     <button id="goto-management-btn" class="group flex flex-col items-center justify-center p-8 bg-white rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all">
+                        <svg class="w-16 h-16 text-purple-500 mb-4 group-hover:text-purple-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                         <span class="text-xl font-bold text-gray-700">保管期限管理</span>
+                         <p class="text-gray-500 mt-1 text-center">期限が経過した物品を処理します。</p>
+                     </button>
+                 </div>
+            </div>
+
+            <!-- Registration Screen -->
+            <div id="register-screen" class="screen p-6 md:p-8 overflow-y-auto">
+                 <div class="w-full">
+                    <button id="back-to-menu-from-register" class="mb-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        メインメニューへ
+                    </button>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">新規拾得物登録</h2>
+                    <form id="item-form" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="bg-gray-50 p-6 rounded-lg shadow-inner">
+                            <h3 class="font-bold text-lg mb-4">1. 拾得物の撮影・アップロード</h3>
+                            <div class="space-y-4">
+                                <div id="camera-container" class="bg-black rounded-md overflow-hidden relative aspect-video flex items-center justify-center">
+                                    <video id="webcam" class="w-full h-full" autoplay playsinline></video>
+                                    <p id="camera-placeholder" class="text-white absolute">カメラを起動中...</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button type="button" id="capture-btn" class="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                        撮影
+                                    </button>
+                                     <label class="flex-1 cursor-pointer inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50">
+                                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                        アップロード
+                                        <input type="file" id="image-upload" class="hidden" accept="image/*">
+                                    </label>
+                                </div>
+                                <div id="preview-container" class="bg-gray-200 rounded-md aspect-video flex items-center justify-center relative">
+                                    <img id="image-preview" src="" class="hidden w-full h-full object-contain rounded-md">
+                                    <p id="preview-placeholder" class="text-gray-500">ここにプレビューが表示されます</p>
+                                    <div id="ai-spinner" class="hidden absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
+                                        <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                        <p class="ml-3 font-semibold text-blue-800">AIが画像を解析中です...</p>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-gray-500 text-center">※画像登録は任意です。画像なしでも登録できます。</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 p-6 rounded-lg shadow-inner">
+                            <h3 class="font-bold text-lg mb-4">2. 拾得物情報の入力</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="col-span-1">
+                                    <label for="found-date" class="block text-sm font-medium text-gray-700">拾得日時</label>
+                                    <input type="datetime-local" id="found-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                </div>
+                                <div class="col-span-1">
+                                    <label for="accepted-date" class="block text-sm font-medium text-gray-700">受付日時</label>
+                                    <input type="datetime-local" id="accepted-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                </div>
+                                <div class="col-span-2">
+                                    <label for="found-place" class="block text-sm font-medium text-gray-700">拾得場所</label>
+                                    <input type="text" id="found-place" placeholder="例：2階フードコート" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                </div>
+                                <div class="col-span-1">
+                                    <label for="category-large" class="block text-sm font-medium text-gray-700">分類（大）<span class="ai-confidence" id="cl-confidence"></span></label>
+                                    <select id="category-large" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></select>
+                                </div>
+                                <div class="col-span-1">
+                                    <label for="category-medium" class="block text-sm font-medium text-gray-700">分類（中）<span class="ai-confidence" id="cm-confidence"></span></label>
+                                    <select id="category-medium" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></select>
+                                </div>
+                                <div class="col-span-2">
+                                    <label for="item-name" class="block text-sm font-medium text-gray-700">品名 <span class="ai-confidence" id="name-confidence"></span></label>
+                                    <input type="text" id="item-name" placeholder="例：二つ折り財布" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                </div>
+                                 <div class="col-span-1">
+                                    <label for="item-color" class="block text-sm font-medium text-gray-700">色 <span class="ai-confidence" id="color-confidence"></span></label>
+                                    <input type="text" id="item-color" placeholder="例：黒" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                </div>
+                                 <div class="col-span-1">
+                                    <label for="item-size" class="block text-sm font-medium text-gray-700">大きさ <span class="ai-confidence" id="size-confidence"></span></label>
+                                    <select id="item-size" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        <option>10cm未満</option>
+                                        <option>10-30cm</option>
+                                        <option>30cm以上</option>
+                                    </select>
+                                </div>
+                                 <div class="col-span-2">
+                                    <label for="item-features" class="block text-sm font-medium text-gray-700">特徴 <span class="ai-confidence" id="features-confidence"></span></label>
+                                    <textarea id="item-features" rows="3" placeholder="例：革製、カード３枚在中" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+                                </div>
+                                <div class="col-span-2">
+                                    <label for="storage-location" class="block text-sm font-medium text-gray-700">保存場所 (AI提案) <span class="ai-confidence" id="storage-confidence"></span></label>
+                                    <input type="text" id="storage-location" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-yellow-100 font-mono">
+                                </div>
+                                <div class="col-span-2 border-t pt-4 mt-2">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-3">3. 権利情報</h4>
+                                    <div id="rights-group" class="space-y-3">
+                                        <div class="relative flex items-start">
+                                            <div class="flex items-center h-5">
+                                                <input id="claim-ownership" name="rights" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                            </div>
+                                            <div class="ml-3 text-sm"><label for="claim-ownership" class="font-medium text-gray-700">拾得者として所有権を主張する</label></div>
+                                        </div>
+                                        <div class="relative flex items-start">
+                                            <div class="flex items-center h-5">
+                                                <input id="claim-reward" name="rights" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                            </div>
+                                            <div class="ml-3 text-sm"><label for="claim-reward" class="font-medium text-gray-700">報労金を受け取る権利を主張する</label></div>
+                                        </div>
+                                        <div class="relative flex items-start">
+                                            <div class="flex items-center h-5">
+                                                <input id="waive-rights" name="rights" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                            </div>
+                                            <div class="ml-3 text-sm"><label for="waive-rights" class="font-medium text-gray-700">一切の権利を放棄する</label></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-span-2 mt-4 flex justify-end space-x-3">
+                                    <button type="button" id="clear-form-btn" class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50">クリア</button>
+                                    <button type="button" id="register-btn" class="inline-flex justify-center px-6 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">登録する</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                 </div>
+            </div>
+
+            <!-- Item List Screen -->
+            <div id="list-screen" class="screen p-6 md:p-8 overflow-y-auto w-full">
+                 <div class="w-full">
+                     <button id="back-to-menu-from-list" class="mb-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        メインメニューへ
+                    </button>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">拾得物一覧・検索</h2>
+                    <div class="mb-6"><input type="text" id="search-input" placeholder="キーワードで検索 (品名, 特徴, 登録名など)" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 text-lg"></div>
+                    <div class="overflow-x-auto bg-white rounded-lg shadow">
+                         <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50"><tr><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">画像</th><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">品名 / 特徴</th><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">登録名</th><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">受付日時</th><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">保存場所</th><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状態</th><th scope="col" class="relative px-6 py-3"><span class="sr-only">操作</span></th></tr></thead>
+                            <tbody id="items-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                        <div id="no-items-message" class="text-center py-12 text-gray-500 hidden"><p>登録されている拾得物はありません。</p></div>
+                        <div id="no-search-results" class="text-center py-12 text-gray-500 hidden"><p>検索結果が見つかりませんでした。</p></div>
+                    </div>
+                 </div>
+            </div>
+
+            <!-- Management Screen -->
+            <div id="management-screen" class="screen p-6 md:p-8 overflow-y-auto w-full flex-col">
+                <div class="w-full">
+                    <button id="back-to-menu-from-management" class="mb-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        メインメニューへ
+                    </button>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">保管期限管理</h2>
+                    
+                    <!-- 1 Week Items -->
+                    <div class="mb-8">
+                        <h3 class="text-xl font-semibold text-gray-700 mb-3">1週間経過（倉庫移動対象）</h3>
+                        <p class="text-sm text-gray-500 mb-4">受付から7日以上経過した物品の一覧です（過去1週間に期限を迎えたもの）。</p>
+                        <div class="table-container overflow-x-auto bg-white rounded-lg shadow">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50 sticky top-0"><tr><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">登録名</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">品名</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">経過日数</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">現在の保存場所</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th></tr></thead>
+                                <tbody id="one-week-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+                            </table>
+                             <div id="no-one-week-items" class="text-center py-8 text-gray-500 hidden"><p>対象の物品はありません。</p></div>
+                        </div>
+                    </div>
+
+                    <!-- 3 Month Items -->
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-700 mb-3">3ヶ月経過（廃棄・警察届出対象）</h3>
+                        <p class="text-sm text-gray-500 mb-4">受付から3ヶ月以上経過した物品の一覧です（過去1週間に期限を迎えたもの）。</p>
+                        <div class="table-container overflow-x-auto bg-white rounded-lg shadow">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50 sticky top-0"><tr><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">登録名</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">品名</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">経過日数</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">権利情報</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th></tr></thead>
+                                <tbody id="three-month-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+                            </table>
+                            <div id="no-three-month-items" class="text-center py-8 text-gray-500 hidden"><p>対象の物品はありません。</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="toast" class="toast"></div>
+    <div id="label-preview-modal" class="modal-backdrop">
+       <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm"><h2 class="text-xl font-bold mb-4 no-print">ラベル印刷プレビュー</h2><div id="label-content-wrapper"><div id="label-content" class="border p-4 rounded-md font-mono text-sm bg-white" style="width: 288px; height: 192px; display: flex; flex-direction: column; justify-content: center;"></div></div><div class="mt-6 flex justify-end space-x-3 no-print"><button id="close-preview-btn" class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50">閉じる</button><button id="print-label-btn" class="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>印刷</button></div></div>
+    </div>
+    <div id="location-modal" class="modal-backdrop">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md"><h2 class="text-xl font-bold mb-4">保存場所の変更</h2><p id="location-modal-item-name" class="mb-4 text-gray-600"></p><div><label for="new-location" class="block text-sm font-medium text-gray-700">新しい保存場所</label><input type="text" id="new-location" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm font-mono"></div><div class="mt-6 flex justify-end space-x-3"><button id="cancel-location-change" class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md">キャンセル</button><button id="confirm-location-change" class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600">変更</button></div></div>
+    </div>
+    <div id="action-modal" class="modal-backdrop">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md"><h2 class="text-xl font-bold mb-4">最終処理の実行</h2><p id="action-modal-item-name" class="mb-4 text-gray-600"></p><p class="text-sm text-red-600 mb-4">この操作は取り消せません。実行しますか？</p><div class="mt-6 flex justify-end space-x-3"><button id="cancel-final-action" class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md">キャンセル</button><button id="confirm-police-action" class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600">警察届出済にする</button><button id="confirm-dispose-action" class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600">廃棄済にする</button></div></div>
+    </div>
+
+</body>
+
+<script>
+// --- Script remains largely the same, with added logic for the new Management Screen ---
+document.addEventListener('DOMContentLoaded', () => {
+    // --- All existing DOM element declarations ---
+    const screens = { auth: document.getElementById('auth-screen'), mainMenu: document.getElementById('main-menu-screen'), register: document.getElementById('register-screen'), list: document.getElementById('list-screen'), management: document.getElementById('management-screen') };
+    const authForm = document.getElementById('auth-form');
+    const facilityNameDisplay = document.getElementById('facility-name');
+    const logoutButton = document.getElementById('logout-button');
+    const gotoRegisterBtn = document.getElementById('goto-register-btn');
+    const gotoListBtn = document.getElementById('goto-list-btn');
+    const gotoManagementBtn = document.getElementById('goto-management-btn');
+    const backToMenuFromRegister = document.getElementById('back-to-menu-from-register');
+    const backToMenuFromList = document.getElementById('back-to-menu-from-list');
+    const backToMenuFromManagement = document.getElementById('back-to-menu-from-management');
+    const webcamVideo = document.getElementById('webcam');
+    const cameraPlaceholder = document.getElementById('camera-placeholder');
+    const captureBtn = document.getElementById('capture-btn');
+    const imageUpload = document.getElementById('image-upload');
+    const imagePreview = document.getElementById('image-preview');
+    const previewPlaceholder = document.getElementById('preview-placeholder');
+    const aiSpinner = document.getElementById('ai-spinner');
+    const itemForm = document.getElementById('item-form');
+    const registerBtn = document.getElementById('register-btn');
+    const clearFormBtn = document.getElementById('clear-form-btn');
+    const searchInput = document.getElementById('search-input');
+    const itemsTableBody = document.getElementById('items-table-body');
+    const noItemsMessage = document.getElementById('no-items-message');
+    const noSearchResults = document.getElementById('no-search-results');
+    const toast = document.getElementById('toast');
+
+    // Modals and their content
+    const labelPreviewModal = document.getElementById('label-preview-modal');
+    const labelContentDiv = document.getElementById('label-content');
+    const closePreviewBtn = document.getElementById('close-preview-btn');
+    const printLabelBtn = document.getElementById('print-label-btn');
+
+    const locationModal = document.getElementById('location-modal');
+    const locationModalItemName = document.getElementById('location-modal-item-name');
+    const newLocationInput = document.getElementById('new-location');
+    const cancelLocationChangeBtn = document.getElementById('cancel-location-change');
+    const confirmLocationChangeBtn = document.getElementById('confirm-location-change');
+    
+    const actionModal = document.getElementById('action-modal');
+    const actionModalItemName = document.getElementById('action-modal-item-name');
+    const cancelFinalActionBtn = document.getElementById('cancel-final-action');
+    const confirmPoliceActionBtn = document.getElementById('confirm-police-action');
+    const confirmDisposeActionBtn = document.getElementById('confirm-dispose-action');
+
+    // Management Screen Tables
+    const oneWeekTableBody = document.getElementById('one-week-table-body');
+    const noOneWeekItems = document.getElementById('no-one-week-items');
+    const threeMonthTableBody = document.getElementById('three-month-table-body');
+    const noThreeMonthItems = document.getElementById('no-three-month-items');
+
+    // Rights checkboxes
+    const claimOwnershipCheck = document.getElementById('claim-ownership');
+    const claimRewardCheck = document.getElementById('claim-reward');
+    const waiveRightsCheck = document.getElementById('waive-rights');
+    const rightsGroup = document.getElementById('rights-group');
+
+    let items = [];
+    let webcamStream = null;
+    let currentEditingItemId = null; // To track which item is being edited in modals
+    const CATEGORIES = { "かばん類": ["手提げかばん", "肩掛けかばん", "小物入れ"], "財布類": ["財布", "がま口", "小銭入れ"], "衣類・履物類": ["帽子類", "上着類", "ズボン類", "履物類"], "かさ類": ["長傘", "折りたたみ傘", "ビニール傘"], "時計類": ["腕時計"], "電気製品類": ["携帯電話機", "携帯音響品", "電子機器"], "その他": ["その他"] };
+
+    // --- All existing functions (showScreen, showToast, etc.) ---
+    
+    // --- Management Screen Logic ---
+    function renderManagementTables() {
+        const now = new Date();
+        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+        const threeMonthsAgo = new Date(now);
+        threeMonthsAgo.setMonth(now.getMonth() - 3);
+        const threeMonthsAndAWeekAgo = new Date(now);
+        threeMonthsAndAWeekAgo.setMonth(now.getMonth() - 3);
+        threeMonthsAndAWeekAgo.setDate(threeMonthsAndAWeekAgo.getDate() - 7);
+        
+        const oneWeekItems = items.filter(item => {
+            const acceptedDate = new Date(item.acceptedDate);
+            return item.status === '保管中' && acceptedDate <= oneWeekAgo && acceptedDate > fourteenDaysAgo;
+        });
+
+        const threeMonthItems = items.filter(item => {
+            const acceptedDate = new Date(item.acceptedDate);
+            // This logic is a simplification for the prototype.
+            // A real implementation would need more robust date handling for months.
+            return item.status === '保管中' && acceptedDate <= threeMonthsAgo && acceptedDate > threeMonthsAndAWeekAgo;
+        });
+
+        // Render 1-week table
+        oneWeekTableBody.innerHTML = '';
+        if (oneWeekItems.length > 0) {
+            noOneWeekItems.classList.add('hidden');
+            oneWeekItems.forEach(item => {
+                const tr = document.createElement('tr');
+                const elapsedDays = Math.floor((now - new Date(item.acceptedDate)) / (1000 * 60 * 60 * 24));
+                tr.innerHTML = `
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 font-mono">${item.registrationName}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${item.name}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${elapsedDays}日</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 font-mono">${item.storageLocation}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                        <button data-item-id="${item.id}" class="location-change-btn text-indigo-600 hover:text-indigo-900">場所変更</button>
+                    </td>
+                `;
+                oneWeekTableBody.appendChild(tr);
+            });
+        } else {
+            noOneWeekItems.classList.remove('hidden');
+        }
+
+        // Render 3-month table
+        threeMonthTableBody.innerHTML = '';
+        if (threeMonthItems.length > 0) {
+            noThreeMonthItems.classList.add('hidden');
+            threeMonthItems.forEach(item => {
+                const tr = document.createElement('tr');
+                const elapsedDays = Math.floor((now - new Date(item.acceptedDate)) / (1000 * 60 * 60 * 24));
+                const rightsText = item.rights.claimOwnership ? '所有権主張' : (item.rights.waiveAll ? '権利放棄' : '権利未定');
+                tr.innerHTML = `
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 font-mono">${item.registrationName}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${item.name}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${elapsedDays}日</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${rightsText}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                        <button data-item-id="${item.id}" class="final-action-btn text-red-600 hover:text-red-900">処理実行</button>
+                    </td>
+                `;
+                threeMonthTableBody.appendChild(tr);
+            });
+        } else {
+            noThreeMonthItems.classList.remove('hidden');
+        }
+    }
+
+    function openLocationChangeModal(itemId) {
+        currentEditingItemId = itemId;
+        const item = items.find(i => i.id === itemId);
+        if (item) {
+            locationModalItemName.textContent = `登録名: ${item.registrationName} - ${item.name}`;
+            newLocationInput.value = item.storageLocation;
+            locationModal.style.display = 'flex';
+            newLocationInput.focus();
+        }
+    }
+
+    function openFinalActionModal(itemId) {
+        currentEditingItemId = itemId;
+        const item = items.find(i => i.id === itemId);
+        if (item) {
+            actionModalItemName.textContent = `登録名: ${item.registrationName} - ${item.name}`;
+            actionModal.style.display = 'flex';
+        }
+    }
+
+    function updateStorageLocation() {
+        if (currentEditingItemId === null) return;
+        const itemIndex = items.findIndex(i => i.id === currentEditingItemId);
+        if (itemIndex > -1) {
+            items[itemIndex].storageLocation = newLocationInput.value;
+            items[itemIndex].status = '倉庫保管中'; // Update status as well
+            localStorage.setItem('items', JSON.stringify(items));
+            showToast('保存場所を更新しました。', 'success');
+            renderManagementTables();
+            locationModal.style.display = 'none';
+            currentEditingItemId = null;
+        }
+    }
+
+    function updateItemStatus(newStatus) {
+        if (currentEditingItemId === null) return;
+        const itemIndex = items.findIndex(i => i.id === currentEditingItemId);
+        if (itemIndex > -1) {
+            items[itemIndex].status = newStatus;
+            localStorage.setItem('items', JSON.stringify(items));
+            showToast(`ステータスを「${newStatus}」に更新しました。`, 'success');
+            renderManagementTables();
+            actionModal.style.display = 'none';
+            currentEditingItemId = null;
+        }
+    }
+
+    // --- All existing functions up to initializeApp ---
+    // (This includes handleAuth, logout, initWebcam, setupCategoryDropdowns, captureImage, handleImageUpload, simulateAI, populateFormWithAI, clearForm, setDefaultDates, setDefaultRights, generateRegistrationName, registerItem, renderItems, handleSearch, showLabelPreview)
+    // NOTE: The following functions have been modified or are new
+    function showScreen(screenId) {
+        Object.values(screens).forEach(screen => screen.classList.remove('active-screen'));
+        screens[screenId].classList.add('active-screen');
+    }
+
+    function showToast(message, type = 'success') {
+        toast.textContent = message;
+        toast.className = 'toast show';
+        toast.classList.toggle('bg-green-600', type === 'success');
+        toast.classList.toggle('bg-red-600', type !== 'success');
+        setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    }
+    
+    function handleAuth(event) { event.preventDefault(); const code = document.getElementById('facility-code').value; const pass = document.getElementById('password').value; if (code === 'FACILITY-01' && pass === 'password') { const authData = { token: 'dummy-token-12345', facilityName: '長泉町' }; localStorage.setItem('authData', JSON.stringify(authData)); initializeApp(); showToast('認証に成功しました。', 'success'); } else { showToast('施設コードまたはパスワードが違います。', 'error'); } }
+    function logout() { localStorage.removeItem('authData'); facilityNameDisplay.textContent = ''; logoutButton.classList.add('hidden'); if (webcamStream) webcamStream.getTracks().forEach(track => track.stop()); webcamStream = null; showScreen('auth'); }
+    async function initWebcam() { try { if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) { webcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); webcamVideo.srcObject = webcamStream; cameraPlaceholder.classList.add('hidden'); } } catch (error) { cameraPlaceholder.textContent = 'カメラにアクセスできませんでした。'; } }
+    function setupCategoryDropdowns() { const largeCat = document.getElementById('category-large'); const mediumCat = document.getElementById('category-medium'); largeCat.innerHTML = '<option value="">選択してください</option>'; Object.keys(CATEGORIES).forEach(key => { const option = document.createElement('option'); option.value = key; option.textContent = key; largeCat.appendChild(option); }); largeCat.addEventListener('change', () => { const selectedLarge = largeCat.value; mediumCat.innerHTML = '<option value="">選択してください</option>'; if (selectedLarge && CATEGORIES[selectedLarge]) { CATEGORIES[selectedLarge].forEach(medium => { const option = document.createElement('option'); option.value = medium; option.textContent = medium; mediumCat.appendChild(option); }); } }); }
+    function captureImage() { if (!webcamStream) return showToast('カメラが起動していません。', 'error'); const canvas = document.createElement('canvas'); canvas.width = webcamVideo.videoWidth; canvas.height = webcamVideo.videoHeight; canvas.getContext('2d').drawImage(webcamVideo, 0, 0, canvas.width, canvas.height); const dataUrl = canvas.toDataURL('image/png'); imagePreview.src = dataUrl; imagePreview.classList.remove('hidden'); previewPlaceholder.classList.add('hidden'); simulateAI(dataUrl); }
+    function handleImageUpload(event) { const file = event.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (e) => { imagePreview.src = e.target.result; imagePreview.classList.remove('hidden'); previewPlaceholder.classList.add('hidden'); simulateAI(e.target.result); }; reader.readAsDataURL(file); } }
+    function simulateAI(imageData) { aiSpinner.classList.remove('hidden'); const today = new Date(); const datePrefix = `${String(today.getFullYear()).slice(2)}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`; const todayItems = items.filter(item => new Date(item.acceptedDate).toDateString() === today.toDateString()); const nn = String(todayItems.length + 1).padStart(2, '0'); const mockResponses = [{ category_large: { value: "財布類", confidence: 0.98 }, category_medium: { value: "財布", confidence: 0.95 }, name: { value: "二つ折り財布", confidence: 0.88 }, features: { value: "革製、カード３枚在中", confidence: 0.75 }, color: { value: "黒", confidence: 0.99 }, size: { value: "10-30cm", confidence: 0.92 }, storage_location_suggestion: { value: `${datePrefix}-${nn}`, confidence: 1.0 } }, { category_large: { value: "かさ類", confidence: 0.99 }, category_medium: { value: "折りたたみ傘", confidence: 0.96 }, name: { value: "折りたたみ傘", confidence: 0.91 }, features: { value: "チェック柄のカバー付き", confidence: 0.80 }, color: { value: "紺", confidence: 0.94 }, size: { value: "30cm以上", confidence: 0.85 }, storage_location_suggestion: { value: `${datePrefix}-umb`, confidence: 1.0 } }, { category_large: { value: "電気製品類", confidence: 0.97 }, category_medium: { value: "携帯電話機", confidence: 0.99 }, name: { value: "スマートフォン", confidence: 0.95 }, features: { value: "画面にひび割れあり、青いケース", confidence: 0.89 }, color: { value: "黒", confidence: 0.98 }, size: { value: "10-30cm", confidence: 0.96 }, storage_location_suggestion: { value: `${datePrefix}-${nn}`, confidence: 1.0 } }]; setTimeout(() => { const randomResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)]; populateFormWithAI(randomResponse); aiSpinner.classList.add('hidden'); showToast('AIによる画像解析が完了しました。', 'success'); }, 2000); }
+    function populateFormWithAI(aiData) { const storageLocationInput = document.getElementById('storage-location'); const fields = { 'category-large': aiData.category_large, 'item-name': aiData.name, 'item-features': aiData.features, 'item-color': aiData.color, 'item-size': aiData.size, 'storage-location': aiData.storage_location_suggestion, }; for (const [id, data] of Object.entries(fields)) { document.getElementById(id).value = data.value; const confidenceId = id.startsWith('category') ? id.replace('category-', 'c') + '-confidence' : id.replace('item-', '') + '-confidence'; if (document.getElementById(confidenceId)) { document.getElementById(confidenceId).textContent = `(${Math.round(data.confidence * 100)}%)`; document.getElementById(confidenceId).classList.add('text-xs', 'text-green-700', 'font-bold', 'ml-1'); } } storageLocationInput.dataset.aiSuggestion = aiData.storage_location_suggestion.value; const largeCat = document.getElementById('category-large'); largeCat.dispatchEvent(new Event('change')); setTimeout(() => { document.getElementById('category-medium').value = aiData.category_medium.value; const cmConfidence = document.getElementById('cm-confidence'); cmConfidence.textContent = `(${Math.round(aiData.category_medium.confidence * 100)}%)`; cmConfidence.classList.add('text-xs', 'text-green-700', 'font-bold', 'ml-1'); }, 100); }
+    function clearForm() { itemForm.reset(); imagePreview.src = ''; imagePreview.classList.add('hidden'); previewPlaceholder.classList.remove('hidden'); document.querySelectorAll('.ai-confidence').forEach(el => el.textContent = ''); setDefaultDates(); setDefaultRights(); const storageLocationInput = document.getElementById('storage-location'); storageLocationInput.dataset.aiSuggestion = ''; storageLocationInput.classList.remove('bg-orange-200'); storageLocationInput.classList.add('bg-yellow-100'); showToast('フォームをクリアしました。'); }
+    function setDefaultDates() { const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); const nowString = now.toISOString().slice(0, 16); document.getElementById('found-date').value = nowString; document.getElementById('accepted-date').value = nowString; }
+    function setDefaultRights() { claimOwnershipCheck.checked = false; claimRewardCheck.checked = false; waiveRightsCheck.checked = true; claimOwnershipCheck.disabled = true; claimRewardCheck.disabled = true; }
+    function generateRegistrationName() { const today = new Date(); const yy = String(today.getFullYear()).slice(2); const mm = String(today.getMonth() + 1).padStart(2, '0'); const dd = String(today.getDate()).padStart(2, '0'); const todayItems = items.filter(item => new Date(item.acceptedDate).toDateString() === today.toDateString()); const nn = String(todayItems.length + 1).padStart(2, '0'); return `${yy}-${mm}-${dd}-${nn}`; }
+    function registerItem() { const newItem = { id: Date.now(), registrationName: generateRegistrationName(), imageUrl: imagePreview.src, foundDate: document.getElementById('found-date').value, acceptedDate: document.getElementById('accepted-date').value, foundPlace: document.getElementById('found-place').value, categoryLarge: document.getElementById('category-large').value, categoryMedium: document.getElementById('category-medium').value, name: document.getElementById('item-name').value, color: document.getElementById('item-color').value, size: document.getElementById('item-size').value, features: document.getElementById('item-features').value, storageLocation: document.getElementById('storage-location').value, status: '保管中', rights: { claimOwnership: claimOwnershipCheck.checked, claimReward: claimRewardCheck.checked, waiveAll: waiveRightsCheck.checked } }; items.unshift(newItem); localStorage.setItem('items', JSON.stringify(items)); showToast('拾得物を登録しました。', 'success'); clearForm(); showLabelPreview(newItem); }
+    function renderItems(itemsToRender = items) { itemsTableBody.innerHTML = ''; noSearchResults.classList.add('hidden'); if (itemsToRender.length === 0) { noItemsMessage.classList.toggle('hidden', !!searchInput.value); noSearchResults.classList.toggle('hidden', !searchInput.value); return; } noItemsMessage.classList.add('hidden'); itemsToRender.forEach(item => { const tr = document.createElement('tr'); tr.innerHTML = `<td class="px-6 py-4 whitespace-nowrap"><div class="flex-shrink-0 h-16 w-16 bg-gray-200 rounded-md flex items-center justify-center">${item.imageUrl ? `<img class="h-16 w-16 object-cover rounded-md" src="${item.imageUrl}" alt="拾得物画像">` : `<span class="text-xs text-gray-500">画像なし</span>`}</div></td><td class="px-6 py-4"><div class="text-sm font-medium text-gray-900 truncate" style="max-width: 200px;">${item.name || '(品名なし)'}</div><div class="text-sm text-gray-500 truncate" style="max-width: 200px;">${item.features || '(特徴なし)'}</div></td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-mono">${item.registrationName}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(item.acceptedDate).toLocaleString('ja-JP')}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-mono">${item.storageLocation}</td><td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">${item.status}</span></td><td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><button data-item-id="${item.id}" class="print-label-button text-blue-600 hover:text-blue-900 mr-3">印刷</button><a href="#" class="text-indigo-600 hover:text-indigo-900">詳細</a></td>`; itemsTableBody.appendChild(tr); }); }
+    function handleSearch() { const searchTerm = searchInput.value.toLowerCase(); const filteredItems = items.filter(item => Object.values(item).some(val => typeof val === 'string' && val.toLowerCase().includes(searchTerm)) ); renderItems(filteredItems); }
+    function showLabelPreview(item) { labelContentDiv.innerHTML = `<div class="text-center space-y-2"><div class="text-2xl font-bold">${item.registrationName}</div><div class="text-lg">品名: ${item.name || '(品名なし)'}</div><div class="text-lg">保存場所: ${item.storageLocation}</div><div class="text-base">登録日: ${new Date(item.acceptedDate).toLocaleDateString('ja-JP')}</div></div>`; labelPreviewModal.style.display = 'flex'; }
+    function initializeApp() { const authData = JSON.parse(localStorage.getItem('authData')); if (authData && authData.token) { facilityNameDisplay.textContent = `${authData.facilityName}でログイン中`; logoutButton.classList.remove('hidden'); items = JSON.parse(localStorage.getItem('items')) || []; showScreen('mainMenu'); } else { showScreen('auth'); } }
+    
+    // --- Event Listeners ---
+    itemForm.addEventListener('keydown', (event) => { if (event.key === 'Enter') event.preventDefault(); });
+    registerBtn.addEventListener('click', registerItem);
+    rightsGroup.addEventListener('change', (e) => { const storageLocationInput = document.getElementById('storage-location'); if (e.target.id === 'waive-rights') { if (e.target.checked) { claimOwnershipCheck.checked = false; claimRewardCheck.checked = false; claimOwnershipCheck.disabled = true; claimRewardCheck.disabled = true; if (storageLocationInput.value === '所有権主張・保管庫') { storageLocationInput.value = storageLocationInput.dataset.aiSuggestion || ''; } storageLocationInput.classList.remove('bg-orange-200'); storageLocationInput.classList.add('bg-yellow-100'); } else { claimOwnershipCheck.disabled = false; claimRewardCheck.disabled = false; } } else if (e.target.id === 'claim-ownership' || e.target.id === 'claim-reward') { if (e.target.checked) { waiveRightsCheck.checked = false; claimOwnershipCheck.disabled = false; claimRewardCheck.disabled = false; } if (claimOwnershipCheck.checked) { storageLocationInput.value = '所有権主張・保管庫'; storageLocationInput.classList.add('bg-orange-200'); storageLocationInput.classList.remove('bg-yellow-100'); } else { storageLocationInput.value = storageLocationInput.dataset.aiSuggestion || ''; storageLocationInput.classList.remove('bg-orange-200'); storageLocationInput.classList.add('bg-yellow-100'); } } });
+    authForm.addEventListener('submit', handleAuth);
+    logoutButton.addEventListener('click', logout);
+    gotoRegisterBtn.addEventListener('click', () => { showScreen('register'); initWebcam(); setDefaultDates(); setDefaultRights(); });
+    gotoListBtn.addEventListener('click', () => { showScreen('list'); renderItems(); });
+    backToMenuFromRegister.addEventListener('click', () => { if (webcamStream) { webcamStream.getTracks().forEach(track => track.stop()); webcamStream = null; } showScreen('mainMenu'); });
+    backToMenuFromList.addEventListener('click', () => showScreen('mainMenu'));
+    clearFormBtn.addEventListener('click', clearForm);
+    searchInput.addEventListener('input', handleSearch);
+    closePreviewBtn.addEventListener('click', () => { labelPreviewModal.style.display = 'none'; });
+    printLabelBtn.addEventListener('click', () => { window.print(); });
+    itemsTableBody.addEventListener('click', (e) => { if (e.target && e.target.matches('button.print-label-button')) { const itemId = parseInt(e.target.dataset.itemId, 10); const itemToPrint = items.find(item => item.id === itemId); if (itemToPrint) showLabelPreview(itemToPrint); } });
+
+    // New Listeners for Management Screen
+    gotoManagementBtn.addEventListener('click', () => { showScreen('management'); renderManagementTables(); });
+    backToMenuFromManagement.addEventListener('click', () => showScreen('mainMenu'));
+    oneWeekTableBody.addEventListener('click', e => { if (e.target.matches('.location-change-btn')) openLocationChangeModal(parseInt(e.target.dataset.itemId)); });
+    threeMonthTableBody.addEventListener('click', e => { if (e.target.matches('.final-action-btn')) openFinalActionModal(parseInt(e.target.dataset.itemId)); });
+    cancelLocationChangeBtn.addEventListener('click', () => locationModal.style.display = 'none');
+    confirmLocationChangeBtn.addEventListener('click', updateStorageLocation);
+    cancelFinalActionBtn.addEventListener('click', () => actionModal.style.display = 'none');
+    confirmPoliceActionBtn.addEventListener('click', () => updateItemStatus('警察届出済'));
+    confirmDisposeActionBtn.addEventListener('click', () => updateItemStatus('廃棄済'));
+
+    setupCategoryDropdowns();
+    initializeApp();
+});
+</script>
+</html>

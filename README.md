@@ -75,7 +75,7 @@ alembic upgrade head
 cd ..
 
 # AIモデルの事前ダウンロード
-python -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
+python -c "from ultralytics import YOLO; YOLO('backend/yolov8n.pt')"
 python -c "import easyocr; easyocr.Reader(['ja', 'en'])"
 ```
 

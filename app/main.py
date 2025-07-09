@@ -17,6 +17,20 @@ from fastapi.middleware.cors import CORSMiddleware
 import uuid
 from fastapi.staticfiles import StaticFiles
 from datetime import timezone, timedelta, datetime
+import sys
+
+# Electronアプリ内でのパス設定
+if getattr(sys, 'frozen', False):
+    # PyInstallerでパッケージ化された場合
+    base_path = sys._MEIPASS
+else:
+    # 通常の実行の場合
+    base_path = os.path.dirname(os.path.abspath(__file__))
+
+# staticディレクトリのパスを設定
+static_path = os.path.join(os.path.dirname(base_path), 'static')
+if not os.path.exists(static_path):
+    os.makedirs(static_path, exist_ok=True)
 
 app = FastAPI(
     title="拾得物管理システム API",
@@ -346,4 +360,19 @@ def upload_item_image(item_id: str, file: UploadFile = File(...), db: Session = 
     db.refresh(item)
     return {"image_url": image_url}
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=static_path), name="static")
+
+# サーバー起動設定
+if __name__ == "__main__":
+    import uvicorn
+    print("Starting Lost Items Management System Backend Server...")
+    print(f"Static files directory: {static_path}")
+    print("Server will be available at: http://localhost:8000")
+    
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=False,
+        log_level="info"
+    )

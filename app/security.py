@@ -9,7 +9,7 @@ from fastapi import HTTPException, status
 import logging
 import re
 from pathlib import Path
-import magic
+import mimetypes
 import os
 
 logger = logging.getLogger(__name__)
@@ -93,7 +93,7 @@ class SecurityManager:
         
         # MIMEタイプチェック
         try:
-            mime_type = magic.from_file(file_path, mime=True)
+            mime_type, _ = mimetypes.guess_type(file_path)
             result["mime_type"] = mime_type
             
             if mime_type not in self.allowed_mime_types:

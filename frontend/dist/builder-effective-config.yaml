@@ -1,0 +1,39 @@
+directories:
+  output: dist
+  buildResources: assets
+files:
+  - filter:
+      - build/**/*
+      - build/**/*
+      - public/electron.js
+      - public/preload.js
+      - node_modules/**/*
+extraMetadata:
+  main: build/electron.js
+appId: com.lostitems.desktop
+productName: Lost Items Management System
+forceCodeSigning: false
+extraResources:
+  - from: ../app
+    to: app
+  - from: ../backend
+    to: backend
+  - from: ../requirements.txt
+    to: requirements.txt
+  - from: ../backend/yolov8n.pt
+    to: yolov8n.pt
+  - from: ../docs
+    to: docs
+  - from: ./build
+    to: build
+win:
+  target: portable
+  icon: public/icon.ico
+mac:
+  target: dmg
+  icon: public/icon.icns
+linux:
+  target: AppImage
+  icon: public/icon.png
+extends: react-cra
+electronVersion: 25.9.8
