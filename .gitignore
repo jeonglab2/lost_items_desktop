@@ -1,1 +1,33 @@
-node_modules/ 
+# Node.js
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+
+# Electron/Reactビルド成果物
+frontend/dist/
+frontend/build/
+*.exe
+*.asar
+*.dll
+*.bin
+*.pak
+*.dat
+*.log
+*.yml
+
+# OS/エディタ
+.DS_Store
+.vscode/
+.idea/
+Thumbs.db
+
+# モデル・データ
+*.pt
+*.db
+*.sqlite3
+*.bak
+
+# 環境変数
+.env
