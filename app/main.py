@@ -348,22 +348,46 @@ def search_items(
 
 @app.post("/items/{item_id}/image")
 def upload_item_image(item_id: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    # 画像ファイルを保存（例: static/images/ ディレクトリに保存）
+    # 画像ファイルを保存（static/images/ ディレクトリに保存）
     import os
-    from uuid import uuid4
+    from datetime import datetime
 
     # 保存先ディレクトリ
     save_dir = "static/images"
     os.makedirs(save_dir, exist_ok=True)
-    # 一意なファイル名を生成
-    ext = os.path.splitext(file.filename)[1]
-    filename = f"{item_id}_{uuid4().hex}{ext}"
+    
+    # 拡張子を取得
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+        ext = '.jpg'  # デフォルト
+    
+    # item_idから日付部分を抽出（yy-mm-dd-nnnn形式からyyyymmdd_nnnn形式に変換）
+    try:
+        # item_idの形式: yy-mm-dd-nnnn
+        parts = item_id.split('-')
+        if len(parts) == 4:
+            year, month, day, sequence = parts
+            # yy-mm-dd-nnnn → yyyymmdd_nnnn
+            # 年は20xx年を想定（必要に応じて調整可能）
+            date_part = f"20{year}{month}{day}"
+            filename = f"{date_part}_{sequence}{ext}"
+        else:
+            # フォールバック: 現在の日時を使用
+            now = datetime.now()
+            date_part = now.strftime("%Y%m%d")
+            filename = f"{date_part}_{item_id}{ext}"
+    except Exception as e:
+        # エラー時のフォールバック
+        now = datetime.now()
+        date_part = now.strftime("%Y%m%d")
+        filename = f"{date_part}_{item_id}{ext}"
+    
     file_path = os.path.join(save_dir, filename)
 
     with open(file_path, "wb") as f:
         f.write(file.file.read())
 
-    # 画像URLをDBに保存（例: /static/images/filename）
+    # 画像URLをDBに保存
     image_url = f"/static/images/{filename}"
     item = db.query(Item).filter(Item.item_id == item_id).first()
     if not item:

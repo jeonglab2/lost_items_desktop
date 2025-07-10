@@ -148,8 +148,25 @@ const RegisterScreen: React.FC = () => {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
+      // 現在の日時からファイル名を生成（yyyymmdd_nnnn形式）
+      const now = new Date();
+      const datePart = now.getFullYear().toString() + 
+                     (now.getMonth() + 1).toString().padStart(2, '0') + 
+                     now.getDate().toString().padStart(2, '0');
+      
+      // 拡張子を取得
+      const originalExt = file.name.split('.').pop()?.toLowerCase();
+      const ext = originalExt && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(originalExt) 
+                 ? `.${originalExt}` : '.jpg';
+      
+      // 同日の通し番号は後でサーバー側で決定されるため、一時的な名前を使用
+      const tempFileName = `${datePart}_temp${ext}`;
+      
+      // 新しいFileオブジェクトを作成（元のファイルの内容、新しい名前）
+      const renamedFile = new File([file], tempFileName, { type: file.type });
+      
+      setSelectedFile(renamedFile);
+      const url = URL.createObjectURL(renamedFile);
       setPreviewUrl(url);
       setImageSource('file');
     }
@@ -391,7 +408,16 @@ ${errorMessage}
         // キャンバスからBlobを生成
         canvas.toBlob((blob) => {
           if (blob) {
-            const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+            // 現在の日時からファイル名を生成（yyyymmdd_nnnn形式）
+            const now = new Date();
+            const datePart = now.getFullYear().toString() + 
+                           (now.getMonth() + 1).toString().padStart(2, '0') + 
+                           now.getDate().toString().padStart(2, '0');
+            
+            // 同日の通し番号は後でサーバー側で決定されるため、一時的な名前を使用
+            const tempFileName = `${datePart}_temp.jpg`;
+            
+            const file = new File([blob], tempFileName, { type: 'image/jpeg' });
             setSelectedFile(file);
             setPreviewUrl(URL.createObjectURL(blob));
             stopCamera();

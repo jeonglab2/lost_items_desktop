@@ -144,9 +144,26 @@ const ListScreen: React.FC = () => {
   const handleImageUpload = async (itemId: string, file: File) => {
     setUploading(true);
     try {
+      // 現在の日時からファイル名を生成（yyyymmdd_nnnn形式）
+      const now = new Date();
+      const datePart = now.getFullYear().toString() + 
+                     (now.getMonth() + 1).toString().padStart(2, '0') + 
+                     now.getDate().toString().padStart(2, '0');
+      
+      // 拡張子を取得
+      const originalExt = file.name.split('.').pop()?.toLowerCase();
+      const ext = originalExt && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(originalExt) 
+                 ? `.${originalExt}` : '.jpg';
+      
+      // 同日の通し番号は後でサーバー側で決定されるため、一時的な名前を使用
+      const tempFileName = `${datePart}_temp${ext}`;
+      
+      // 新しいFileオブジェクトを作成（元のファイルの内容、新しい名前）
+      const renamedFile = new File([file], tempFileName, { type: file.type });
+      
       const formData = new FormData();
-      formData.append('file', file);
-      // 画像アップロード用APIエンドポイント（仮: /items/{item_id}/image）
+      formData.append('file', renamedFile);
+      // 画像アップロード用APIエンドポイント
       await axios.post(`http://localhost:8000/items/${itemId}/image`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
