@@ -2,6 +2,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+// Electron APIの型定義
+declare global {
+  interface Window {
+    electronAPI?: {
+      checkPrinter: () => Promise<boolean>;
+      printReceipt: (data: PrintData) => Promise<void>;
+    };
+  }
+}
+
 interface RecognizeResponse {
   category_large: string;
   category_medium: string;
@@ -26,6 +36,17 @@ interface ItemForm {
   finder_type: string;
   claims_ownership: boolean;
   claims_reward: boolean;
+  finder_name: string;
+  finder_phone: string;
+}
+
+interface PrintData {
+  item_id: string;
+  name: string;
+  category_large: string;
+  category_medium: string;
+  storage_location: string;
+  management_number: string;
 }
 
 const RegisterScreen: React.FC = () => {
@@ -41,6 +62,19 @@ const RegisterScreen: React.FC = () => {
   const [imageSource, setImageSource] = useState<'file' | 'camera' | 'none'>('none');
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  
+  // 印刷関連の状態
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [printData, setPrintData] = useState<PrintData | null>(null);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [printerConnected, setPrinterConnected] = useState(false);
+  
+  // 入力制御の状態
+  const [isInputEnabled, setIsInputEnabled] = useState(true);
+  const [processingTimeout, setProcessingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isFocusing, setIsFocusing] = useState(false);
+  const [focusedElement, setFocusedElement] = useState<HTMLElement | null>(null);
+  const [lastClickTime, setLastClickTime] = useState(0);
   
   // videoRefの初期化確認
   useEffect(() => {
@@ -71,9 +105,11 @@ const RegisterScreen: React.FC = () => {
     color: '',
     status: '保管中',
     image_url: '',
-    finder_type: '一般',
+    finder_type: '第三者',
     claims_ownership: false,
     claims_reward: false,
+    finder_name: '',
+    finder_phone: '',
   });
 
   // 分類データの状態
@@ -89,6 +125,20 @@ const RegisterScreen: React.FC = () => {
         setClassifications({ categories: [] });
       });
   }, []);
+
+  // formDataの変更を監視
+  useEffect(() => {
+    console.log('formData changed:', formData);
+  }, [formData]);
+  
+  // コンポーネントのクリーンアップ
+  useEffect(() => {
+    return () => {
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+      }
+    };
+  }, [processingTimeout]);
 
   const categories = classifications.categories;
   const largeCategoryOptions = categories.map((cat: any) => cat.large_category);
@@ -108,6 +158,15 @@ const RegisterScreen: React.FC = () => {
   const startCamera = async () => {
     try {
       console.log('カメラ起動開始...');
+      
+      // 入力を一時的に無効化
+      setIsInputEnabled(false);
+      
+      // 既存のタイムアウトをクリア
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+      }
+      
       console.log('videoRef状態:', { current: !!videoRef.current });
       
       console.log('ブラウザ環境:', {
@@ -226,6 +285,8 @@ const RegisterScreen: React.FC = () => {
       await waitForVideo();
       console.log('カメラ起動完了');
       
+      setIsInputEnabled(true);
+      
     } catch (error) {
       console.error('カメラ起動エラー:', error);
       
@@ -236,6 +297,10 @@ const RegisterScreen: React.FC = () => {
         stream.getTracks().forEach(track => track.stop());
         setStream(null);
       }
+      
+      // エラー時も入力を有効化
+      setIsInputEnabled(true);
+      console.log('カメラ起動エラー: 入力を有効化');
       
       let errorMessage = 'カメラへのアクセスに失敗しました。';
       
@@ -280,6 +345,8 @@ ${errorMessage}
     }
     setIsCameraActive(false);
     setImageSource('none');
+    // 必要であれば、入力有効化の処理のみ残す
+    setIsInputEnabled(true);
   };
 
   const capturePhoto = () => {
@@ -330,6 +397,8 @@ ${errorMessage}
             stopCamera();
             console.log('写真撮影完了:', file.name, file.size);
             alert('写真の撮影が完了しました！');
+            
+            setIsInputEnabled(true);
           } else {
             console.error('Blob生成に失敗しました');
             alert('写真の撮影に失敗しました');
@@ -354,6 +423,10 @@ ${errorMessage}
       alert('画像を選択してください');
       return;
     }
+
+    // 入力を一時的に無効化
+    setIsInputEnabled(false);
+    console.log('AI認識開始: 入力を無効化');
 
     setIsRecognizing(true);
     try {
@@ -384,17 +457,25 @@ ${errorMessage}
       alert('AI認識に失敗しました');
     } finally {
       setIsRecognizing(false);
+      setIsInputEnabled(true);
     }
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    
+    // フォームバリデーション
+    if (!validateForm()) {
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       // 1. まずテキスト情報のみ登録
       const itemData = { ...formData, image_url: '' };
       const res = await axios.post('http://localhost:8000/items', itemData);
       const item = res.data;
+      
       // 2. 画像ファイルがあればアップロード
       if (selectedFile) {
         const formDataImg = new FormData();
@@ -403,8 +484,23 @@ ${errorMessage}
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       }
-      alert('拾得物の登録が完了しました');
-      navigate('/menu');
+      
+      // 3. 印刷データを準備
+      const printData: PrintData = {
+        item_id: item.item_id.toString(),
+        name: formData.name,
+        category_large: formData.category_large,
+        category_medium: formData.category_medium,
+        storage_location: item.storage_location, // データベースから取得した保管場所
+        management_number: item.item_id, // データベースから取得した管理番号（yy-mm-dd-nnnn形式）
+      };
+      
+      setPrintData(printData);
+      setShowPrintPreview(true);
+      
+      // 4. プリンター接続確認
+      await checkPrinterConnection();
+      
     } catch (error) {
       console.error('登録エラー:', error);
       alert('登録に失敗しました');
@@ -414,10 +510,95 @@ ${errorMessage}
   };
 
   const handleInputChange = (field: keyof ItemForm, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+    if (!isInputEnabled) {
+      console.log('入力が無効化されています:', { field, value });
+      return;
+    }
+    
+    console.log('handleInputChange called:', { field, value, type: typeof value });
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value,
+      };
+      console.log('formData updated:', { field, oldValue: prev[field], newValue: value, newFormData: newData });
+      return newData;
+    });
+  };
+
+  // 氏名の入力処理
+  const handleFinderNameChange = (value: string) => {
+    handleInputChange('finder_name', value);
+  };
+
+  // 電話番号のバリデーション（半角数字のみ、10-11桁）
+  const handleFinderPhoneChange = (value: string) => {
+    // 半角数字のみを許可
+    const numbersOnly = value.replace(/[^0-9]/g, '');
+    // 10-11桁に制限
+    const limitedNumbers = numbersOnly.slice(0, 11);
+    handleInputChange('finder_phone', limitedNumbers);
+  };
+
+  // フォーム送信前のバリデーション
+  const validateForm = () => {
+    if (formData.claims_ownership || formData.claims_reward) {
+      if (!formData.finder_name.trim()) {
+        alert('拾得者の氏名を入力してください。');
+        return false;
+      }
+      if (!formData.finder_phone.trim()) {
+        alert('拾得者の電話番号を入力してください。');
+        return false;
+      }
+      if (formData.finder_phone.length < 10 || formData.finder_phone.length > 11) {
+        alert('電話番号は10桁または11桁で入力してください。');
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // プリンター接続確認
+  const checkPrinterConnection = async () => {
+    try {
+      // Electron環境でのプリンター確認
+      if (window.electronAPI) {
+        const connected = await window.electronAPI.checkPrinter();
+        setPrinterConnected(connected);
+        return connected;
+      }
+      return false;
+    } catch (error) {
+      console.error('プリンター確認エラー:', error);
+      return false;
+    }
+  };
+
+  // 印刷実行
+  const executePrint = async (data: PrintData) => {
+    setIsPrinting(true);
+    try {
+      if (window.electronAPI) {
+        await window.electronAPI.printReceipt(data);
+        alert('印刷が完了しました');
+      } else {
+        console.log('印刷データ:', data);
+        alert('印刷機能はデスクトップアプリでのみ利用可能です');
+      }
+    } catch (error) {
+      console.error('印刷エラー:', error);
+      alert('印刷に失敗しました');
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  // 印刷プレビューを閉じる
+  const closePrintPreview = () => {
+    setShowPrintPreview(false);
+    setPrintData(null);
+    navigate('/menu');
   };
 
   return (
@@ -438,7 +619,7 @@ ${errorMessage}
             
             <h2 className="text-2xl font-bold text-gray-800 mb-6">新規拾得物登録</h2>
             
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" style={{ position: 'relative', zIndex: 20 }}>
               {/* 画像アップロードセクション */}
               <div className="bg-gray-50 p-6 rounded-lg">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">画像アップロード（任意）</h3>
@@ -495,15 +676,50 @@ ${errorMessage}
 
                 {/* カメラビュー */}
                 {isCameraActive && (
-                  <div className="mb-4">
+                  <div className="mb-4" style={{ zIndex: 10, position: 'relative' }}>
                     <div className="relative w-full max-w-md mx-auto">
                       <video
                         ref={videoRef}
                         autoPlay
                         playsInline
                         muted
+                        tabIndex={-1}
                         className="w-full border rounded-lg"
-                        style={{ transform: 'scaleX(-1)' }} // ミラー表示
+                        style={{ 
+                          transform: 'scaleX(-1)', 
+                          pointerEvents: 'none',
+                          outline: 'none'
+                        }} // ミラー表示、ポインターイベント無効化、フォーカスアウトライン無効化
+                        onLoadedMetadata={() => {
+                          // ビデオ読み込み完了後にフォーカスをリセット
+                          setTimeout(() => {
+                            const inputs = document.querySelectorAll('input, textarea, select');
+                            inputs.forEach((input) => {
+                              (input as HTMLElement).blur();
+                            });
+                            // フォーム全体のポインターイベントを有効化
+                            const form = document.querySelector('form');
+                            if (form) {
+                              (form as HTMLElement).style.pointerEvents = 'auto';
+                            }
+                            // すべての入力フィールドのポインターイベントを有効化
+                            inputs.forEach((input) => {
+                              (input as HTMLElement).style.pointerEvents = 'auto';
+                            });
+                            
+                            // 入力を再度有効化
+                            setIsInputEnabled(true);
+                            console.log('ビデオ読み込み完了: 入力を有効化');
+                            
+                            // フォーカス状態をリセット
+                            if (document.activeElement && 'blur' in document.activeElement) {
+                              (document.activeElement as HTMLElement).blur();
+                            }
+                            console.log('ビデオ読み込み完了: フォーカスリセット完了');
+                            
+
+                          }, 100);
+                        }}
                       />
                       <canvas ref={canvasRef} className="hidden" />
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -676,10 +892,16 @@ ${errorMessage}
                     <input
                       type="text"
                       value={formData.found_place}
-                      onChange={(e) => handleInputChange('found_place', e.target.value)}
+                      onChange={(e) => handleInputChange('found_place', e.target.value)} // onChangeのみ残す
                       required
                       placeholder="例: 1階ロビー"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      // classNameはシンプル化しても良いですが、そのままでも動作します
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        isInputEnabled 
+                          ? 'border-gray-300 bg-white' 
+                          : 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                      }`}
+                      disabled={!isInputEnabled}
                     />
                   </div>
                   
@@ -692,9 +914,8 @@ ${errorMessage}
                       onChange={(e) => handleInputChange('finder_type', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="一般">一般</option>
-                      <option value="職員">職員</option>
-                      <option value="清掃業者">清掃業者</option>
+                      <option value="第三者">第三者</option>
+                      <option value="施設占有者">施設占有者</option>
                     </select>
                   </div>
                 </div>
@@ -751,10 +972,21 @@ ${errorMessage}
                     <input
                       type="text"
                       value={formData.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      onChange={(e) => {
+                        console.log('品名入力:', e.target.value);
+                        handleInputChange('name', e.target.value);
+                      }}
                       required
                       placeholder="例: ハンドバッグ"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        isInputEnabled 
+                          ? 'border-gray-300 bg-white' 
+                          : 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                      }`}
+                      style={{ 
+                        pointerEvents: isInputEnabled ? 'auto' : 'none'
+                      }}
+                      disabled={!isInputEnabled}
                     />
                   </div>
                   
@@ -765,10 +997,21 @@ ${errorMessage}
                     <input
                       type="text"
                       value={formData.color}
-                      onChange={(e) => handleInputChange('color', e.target.value)}
+                      onChange={(e) => {
+                        console.log('色入力:', e.target.value);
+                        handleInputChange('color', e.target.value);
+                      }}
                       required
                       placeholder="例: 黒"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        isInputEnabled 
+                          ? 'border-gray-300 bg-white' 
+                          : 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                      }`}
+                      style={{ 
+                        pointerEvents: isInputEnabled ? 'auto' : 'none'
+                      }}
+                      disabled={!isInputEnabled}
                     />
                   </div>
                   
@@ -778,11 +1021,22 @@ ${errorMessage}
                     </label>
                     <textarea
                       value={formData.features}
-                      onChange={(e) => handleInputChange('features', e.target.value)}
+                      onChange={(e) => {
+                        console.log('特徴入力:', e.target.value);
+                        handleInputChange('features', e.target.value);
+                      }}
                       required
                       rows={3}
                       placeholder="例: 革製、ブランドロゴあり、サイズ約30cm"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        isInputEnabled 
+                          ? 'border-gray-300 bg-white' 
+                          : 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                      }`}
+                      style={{ 
+                        pointerEvents: isInputEnabled ? 'auto' : 'none'
+                      }}
+                      disabled={!isInputEnabled}
                     />
                   </div>
                 </div>
@@ -821,6 +1075,57 @@ ${errorMessage}
                 </div>
               </div>
 
+              {/* 拾得者情報セクション (所有権・報酬主張時のみ表示) */}
+              {formData.claims_ownership || formData.claims_reward ? (
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">拾得者情報</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        氏名(全角カタカナ) *
+                      </label>
+                      <input
+                         type="text"
+                         value={formData.finder_name}
+                         onChange={(e) => handleFinderNameChange(e.target.value)}
+                         required
+                         placeholder="例: ヤマダタロウ"
+                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                           isInputEnabled 
+                             ? 'border-gray-300 bg-white' 
+                             : 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                         }`}
+                         style={{ 
+                           pointerEvents: isInputEnabled ? 'auto' : 'none'
+                         }}
+                         disabled={!isInputEnabled}
+                       />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        電話番号(ハイフンなし, 半角英数) *
+                      </label>
+                      <input
+                         type="tel"
+                         value={formData.finder_phone}
+                         onChange={(e) => handleFinderPhoneChange(e.target.value)}
+                         required
+                         placeholder="例: 09012345678"
+                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                           isInputEnabled 
+                             ? 'border-gray-300 bg-white' 
+                             : 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                         }`}
+                         style={{ 
+                           pointerEvents: isInputEnabled ? 'auto' : 'none'
+                         }}
+                         disabled={!isInputEnabled}
+                       />
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
               {/* 送信ボタン */}
               <div className="flex justify-end space-x-4">
                 <button
@@ -842,6 +1147,68 @@ ${errorMessage}
           </div>
         </main>
       </div>
+
+      {/* 印刷プレビューモーダル */}
+      {showPrintPreview && printData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">印刷プレビュー</h3>
+            
+            {/* レシートプレビュー */}
+            <div className="bg-white border-2 border-gray-300 rounded-lg p-4 mb-4" style={{ width: '232px', margin: '0 auto' }}>
+              <div className="text-center text-sm space-y-1">
+                <div className="font-bold text-lg">拾得物管理票</div>
+                <div className="border-t border-gray-300 pt-1">
+                  <div className="text-left">
+                    <div><strong>品名:</strong> {printData.name}</div>
+                    <div><strong>分類:</strong> {printData.category_large} - {printData.category_medium}</div>
+                    <div><strong>保管場所:</strong> {printData.storage_location}</div>
+                    <div><strong>管理番号:</strong> {printData.management_number}</div>
+                  </div>
+                </div>
+                <div className="border-t border-gray-300 pt-1 text-xs text-gray-600">
+                  {new Date().toLocaleDateString('ja-JP')}
+                </div>
+              </div>
+            </div>
+            
+            {/* プリンター状態表示 */}
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <div className={`w-3 h-3 rounded-full ${printerConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span className="text-sm">
+                  {printerConnected ? 'プリンター接続済み' : 'プリンター未接続'}
+                </span>
+              </div>
+            </div>
+            
+            {/* 操作ボタン */}
+            <div className="flex space-x-3">
+              {printerConnected && (
+                <button
+                  onClick={() => executePrint(printData)}
+                  disabled={isPrinting}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+                >
+                  {isPrinting ? '印刷中...' : '印刷実行'}
+                </button>
+              )}
+              <button
+                onClick={closePrintPreview}
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+              >
+                完了
+              </button>
+            </div>
+            
+            {!printerConnected && (
+              <div className="mt-3 text-sm text-gray-600 text-center">
+                プリンターが接続されていないため、プレビューのみ表示されます。
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

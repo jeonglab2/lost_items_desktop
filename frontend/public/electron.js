@@ -115,7 +115,7 @@ function startBackendServer() {
       });
 
       backendProcess.on('close', (code) => {
-        console.log(`🔚 Backend process exited with code ${code}`);
+        console.log(`Backend process exited with code ${code}`);
         if (!serverStarted) {
           reject(new Error(`Backend process exited with code ${code}`));
         }

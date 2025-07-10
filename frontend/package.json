@@ -1,10 +1,10 @@
 {
   "name": "lost-items-frontend",
   "version": "1.0.0",
-  "description": "拾得物管理システム フロントエンド",
+  "description": "拾得物管理システム",
   "main": "public/electron.js",
   "homepage": "./",
-  "author": "Matsushima-A-830",
+  "author": "jeong lab",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",

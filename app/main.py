@@ -125,13 +125,18 @@ def read_root():
 
 @app.post("/items", response_model=ItemRead)
 def create_item(item: ItemCreate, db: Session = Depends(get_db)):
-    # item_idをUUIDで生成
-    item_id = str(uuid.uuid4())
-
+    # 同日の通し番号を取得
     dt = datetime.fromisoformat(item.accepted_datetime)
     ymd = dt.strftime("%y-%m-%d")
-    hour = dt.strftime("%H")
-    nn = "01"  # 連番は不要だが、保管場所ロジックのためダミー
+    
+    # 同日のアイテム数を取得して通し番号を生成
+    today_items = db.query(Item).filter(
+        Item.accepted_datetime >= dt.replace(hour=0, minute=0, second=0, microsecond=0).isoformat(),
+        Item.accepted_datetime < dt.replace(hour=23, minute=59, second=59, microsecond=999999).isoformat()
+    ).count()
+    
+    sequence_number = str(today_items + 1).zfill(4)  # 4桁のゼロパディング
+    item_id = f"{ymd}-{sequence_number}"
 
     # 保管場所提案ロジック
     if item.claims_ownership:
@@ -141,7 +146,15 @@ def create_item(item: ItemCreate, db: Session = Depends(get_db)):
     elif "食品" in item.features:
         storage_location = f"{ymd}-冷蔵庫"
     else:
-        storage_location = f"{ymd}-{nn}"
+        # 同日の拾得物数を取得して保管箱番号を計算
+        today_items = db.query(Item).filter(
+            Item.accepted_datetime >= dt.replace(hour=0, minute=0, second=0, microsecond=0).isoformat(),
+            Item.accepted_datetime < dt.replace(hour=23, minute=59, second=59, microsecond=999999).isoformat()
+        ).count()
+        
+        # 20個ごとに保管箱番号をインクリメント
+        storage_box_number = str((today_items // 20) + 1).zfill(2)
+        storage_location = f"{ymd}-{storage_box_number}"
 
     JST = timezone(timedelta(hours=9))
     now = datetime.now(JST).isoformat()
