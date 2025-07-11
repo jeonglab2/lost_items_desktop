@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -71,7 +71,7 @@ const RegisterScreen: React.FC = () => {
   
   // 入力制御の状態
   const [isInputEnabled, setIsInputEnabled] = useState(true);
-  const [processingTimeout, setProcessingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [processingTimeout, setProcessingTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [isFocusing, setIsFocusing] = useState(false);
   const [focusedElement, setFocusedElement] = useState<HTMLElement | null>(null);
   const [lastClickTime, setLastClickTime] = useState(0);
@@ -140,6 +140,20 @@ const RegisterScreen: React.FC = () => {
     };
   }, [processingTimeout]);
 
+  // previewUrlのライフサイクルを管理
+  useEffect(() => {
+    if (selectedFile) {
+      const url = URL.createObjectURL(selectedFile);
+      setPreviewUrl(url);
+      return () => {
+        console.log('プレビューURLを解放:', url);
+        URL.revokeObjectURL(url);
+      };
+    } else {
+      setPreviewUrl('');
+    }
+  }, [selectedFile]);
+
   const categories = classifications.categories;
   const largeCategoryOptions = categories.map((cat: any) => cat.large_category);
   const mediumCategoryOptions =
@@ -148,26 +162,16 @@ const RegisterScreen: React.FC = () => {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // 現在の日時からファイル名を生成（yyyymmdd_nnnn形式）
       const now = new Date();
       const datePart = now.getFullYear().toString() + 
                      (now.getMonth() + 1).toString().padStart(2, '0') + 
                      now.getDate().toString().padStart(2, '0');
-      
-      // 拡張子を取得
       const originalExt = file.name.split('.').pop()?.toLowerCase();
       const ext = originalExt && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(originalExt) 
                  ? `.${originalExt}` : '.jpg';
-      
-      // 同日の通し番号は後でサーバー側で決定されるため、一時的な名前を使用
       const tempFileName = `${datePart}_temp${ext}`;
-      
-      // 新しいFileオブジェクトを作成（元のファイルの内容、新しい名前）
       const renamedFile = new File([file], tempFileName, { type: file.type });
-      
       setSelectedFile(renamedFile);
-      const url = URL.createObjectURL(renamedFile);
-      setPreviewUrl(url);
       setImageSource('file');
     }
   };
@@ -218,9 +222,10 @@ const RegisterScreen: React.FC = () => {
       
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          width: { ideal: 640 }, 
-          height: { ideal: 480 },
-          facingMode: 'environment' // 背面カメラを優先
+          width: { ideal: 1920, min: 1280 }, 
+          height: { ideal: 1080, min: 720 },
+          facingMode: 'environment', // 背面カメラを優先
+          aspectRatio: { ideal: 16/9 }
         } 
       });
       console.log('カメラストリーム取得成功:', mediaStream);
@@ -302,7 +307,7 @@ const RegisterScreen: React.FC = () => {
       await waitForVideo();
       console.log('カメラ起動完了');
       
-      setIsInputEnabled(true);
+      setTimeout(() => setIsInputEnabled(true), 0);
       
     } catch (error) {
       console.error('カメラ起動エラー:', error);
@@ -316,7 +321,7 @@ const RegisterScreen: React.FC = () => {
       }
       
       // エラー時も入力を有効化
-      setIsInputEnabled(true);
+      setTimeout(() => setIsInputEnabled(true), 0);
       console.log('カメラ起動エラー: 入力を有効化');
       
       let errorMessage = 'カメラへのアクセスに失敗しました。';
@@ -345,10 +350,10 @@ ${errorMessage}
 1. ブラウザのアドレスバー横のカメラアイコンをクリックして「許可」を選択
 2. ブラウザの設定 → プライバシーとセキュリティ → サイトの設定 → カメラで許可
 3. 他のアプリケーションでカメラを使用している場合は閉じてください
-4. HTTPS環境（localhostまたはhttps://）でアクセスしてください
+4. HTTPS環境(localhostまたはhttps:// )でアクセスしてください
 5. デバイスにカメラが接続されているか確認してください
 
-詳細なエラー情報はブラウザのコンソール（F12）で確認できます。
+詳細なエラー情報はブラウザのコンソール(F12)で確認できます。
       `;
       
       alert(solutionMessage);
@@ -362,23 +367,18 @@ ${errorMessage}
     }
     setIsCameraActive(false);
     setImageSource('none');
-    // 必要であれば、入力有効化の処理のみ残す
-    setIsInputEnabled(true);
   };
 
   const capturePhoto = () => {
     console.log('写真撮影開始...');
-    
     if (!videoRef.current || !canvasRef.current) {
       console.error('videoRefまたはcanvasRefがnullです');
       alert('カメラの初期化に失敗しました');
       return;
     }
-    
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
-    
     console.log('ビデオ状態:', {
       videoWidth: video.videoWidth,
       videoHeight: video.videoHeight,
@@ -386,50 +386,50 @@ ${errorMessage}
       paused: video.paused,
       ended: video.ended
     });
-    
     if (!context) {
       console.error('キャンバスコンテキストの取得に失敗しました');
       alert('写真の撮影に失敗しました');
       return;
     }
-    
     if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
-      // キャンバスサイズをビデオサイズに合わせる
+      const highResCanvas = document.createElement('canvas');
+      const highResContext = highResCanvas.getContext('2d');
+      const maxWidth = Math.min(video.videoWidth, 3840);
+      const maxHeight = Math.min(video.videoHeight, 2160);
+      highResCanvas.width = maxWidth;
+      highResCanvas.height = maxHeight;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
-      console.log('キャンバスサイズ設定:', canvas.width, 'x', canvas.height);
-      
+      console.log('キャンバスサイズ設定:', {
+        display: `${canvas.width} x ${canvas.height}`,
+        highRes: `${highResCanvas.width} x ${highResCanvas.height}`
+      });
       try {
-        // ビデオから画像をキャンバスに描画
+        if (highResContext) {
+          highResContext.imageSmoothingEnabled = true;
+          highResContext.imageSmoothingQuality = 'high';
+          highResContext.drawImage(video, 0, 0, highResCanvas.width, highResCanvas.height);
+          console.log('高解像度キャンバスへの描画完了');
+        }
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        console.log('キャンバスへの描画完了');
-        
-        // キャンバスからBlobを生成
-        canvas.toBlob((blob) => {
+        console.log('表示用キャンバスへの描画完了');
+        highResCanvas.toBlob((blob) => {
           if (blob) {
-            // 現在の日時からファイル名を生成（yyyymmdd_nnnn形式）
             const now = new Date();
             const datePart = now.getFullYear().toString() + 
                            (now.getMonth() + 1).toString().padStart(2, '0') + 
                            now.getDate().toString().padStart(2, '0');
-            
-            // 同日の通し番号は後でサーバー側で決定されるため、一時的な名前を使用
             const tempFileName = `${datePart}_temp.jpg`;
-            
             const file = new File([blob], tempFileName, { type: 'image/jpeg' });
             setSelectedFile(file);
-            setPreviewUrl(URL.createObjectURL(blob));
             stopCamera();
-            console.log('写真撮影完了:', file.name, file.size);
-            alert('写真の撮影が完了しました！');
-            
             setIsInputEnabled(true);
+            console.log('写真撮影完了:', file.name, file.size);
           } else {
             console.error('Blob生成に失敗しました');
             alert('写真の撮影に失敗しました');
           }
-        }, 'image/jpeg', 0.8);
+        }, 'image/jpeg', 0.95);
       } catch (error) {
         console.error('キャンバス描画エラー:', error);
         alert('写真の撮影に失敗しました');
@@ -483,7 +483,7 @@ ${errorMessage}
       alert('AI認識に失敗しました');
     } finally {
       setIsRecognizing(false);
-      setIsInputEnabled(true);
+      setTimeout(() => setIsInputEnabled(true), 0);
     }
   };
 
@@ -535,22 +535,12 @@ ${errorMessage}
     }
   };
 
-  const handleInputChange = (field: keyof ItemForm, value: any) => {
-    if (!isInputEnabled) {
-      console.log('入力が無効化されています:', { field, value });
-      return;
-    }
-    
-    console.log('handleInputChange called:', { field, value, type: typeof value });
-    setFormData(prev => {
-      const newData = {
-        ...prev,
-        [field]: value,
-      };
-      console.log('formData updated:', { field, oldValue: prev[field], newValue: value, newFormData: newData });
-      return newData;
-    });
-  };
+  const handleInputChange = useCallback((field: keyof ItemForm, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  }, []);
 
   // 氏名の入力処理
   const handleFinderNameChange = (value: string) => {
@@ -676,7 +666,14 @@ ${errorMessage}
                   <div className="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors">
                     <button
                       type="button"
-                      onClick={isCameraActive ? stopCamera : startCamera}
+                      onClick={() => {
+                        if (isCameraActive) {
+                          stopCamera();
+                          setTimeout(() => setIsInputEnabled(true), 0);
+                        } else {
+                          startCamera();
+                        }
+                      }}
                       className="flex flex-col items-center space-y-2 text-green-600 hover:text-green-700"
                     >
                       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -716,36 +713,6 @@ ${errorMessage}
                           pointerEvents: 'none',
                           outline: 'none'
                         }} // ミラー表示、ポインターイベント無効化、フォーカスアウトライン無効化
-                        onLoadedMetadata={() => {
-                          // ビデオ読み込み完了後にフォーカスをリセット
-                          setTimeout(() => {
-                            const inputs = document.querySelectorAll('input, textarea, select');
-                            inputs.forEach((input) => {
-                              (input as HTMLElement).blur();
-                            });
-                            // フォーム全体のポインターイベントを有効化
-                            const form = document.querySelector('form');
-                            if (form) {
-                              (form as HTMLElement).style.pointerEvents = 'auto';
-                            }
-                            // すべての入力フィールドのポインターイベントを有効化
-                            inputs.forEach((input) => {
-                              (input as HTMLElement).style.pointerEvents = 'auto';
-                            });
-                            
-                            // 入力を再度有効化
-                            setIsInputEnabled(true);
-                            console.log('ビデオ読み込み完了: 入力を有効化');
-                            
-                            // フォーカス状態をリセット
-                            if (document.activeElement && 'blur' in document.activeElement) {
-                              (document.activeElement as HTMLElement).blur();
-                            }
-                            console.log('ビデオ読み込み完了: フォーカスリセット完了');
-                            
-
-                          }, 100);
-                        }}
                       />
                       <canvas ref={canvasRef} className="hidden" />
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -800,7 +767,10 @@ ${errorMessage}
                       </button>
                       <button
                         type="button"
-                        onClick={stopCamera}
+                        onClick={() => {
+                          stopCamera();
+                          setTimeout(() => setIsInputEnabled(true), 0);
+                        }}
                         className="px-6 py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700 font-medium"
                       >
                         キャンセル
@@ -811,6 +781,11 @@ ${errorMessage}
                     </div>
                     <div className="text-center mt-1 text-xs text-blue-600">
                       ビデオサイズ: {videoRef.current?.videoWidth || 0} x {videoRef.current?.videoHeight || 0}
+                      {videoRef.current?.videoWidth && videoRef.current?.videoHeight && (
+                        <span className="ml-2 text-green-600">
+                          (高解像度: {Math.min(videoRef.current.videoWidth, 3840)} x {Math.min(videoRef.current.videoHeight, 2160)})
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
@@ -881,7 +856,7 @@ ${errorMessage}
               )}
 
               {/* 基本情報セクション */}
-              <div className="bg-gray-50 p-6 rounded-lg">
+              <div className="bg-gray-50 p-6 rounded-lg" style={{ position: 'relative', zIndex: 1 }}>
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">基本情報</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -894,7 +869,8 @@ ${errorMessage}
                       value={formData.found_datetime}
                       onChange={(e) => handleInputChange('found_datetime', e.target.value)}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                      disabled={!isInputEnabled}
                     />
                   </div>
                   
@@ -907,7 +883,8 @@ ${errorMessage}
                       value={formData.accepted_datetime}
                       onChange={(e) => handleInputChange('accepted_datetime', e.target.value)}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                      disabled={!isInputEnabled}
                     />
                   </div>
                   
@@ -918,15 +895,10 @@ ${errorMessage}
                     <input
                       type="text"
                       value={formData.found_place}
-                      onChange={(e) => handleInputChange('found_place', e.target.value)} // onChangeのみ残す
+                      onChange={(e) => handleInputChange('found_place', e.target.value)}
                       required
                       placeholder="例: 1階ロビー"
-                      // classNameはシンプル化しても良いですが、そのままでも動作します
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        isInputEnabled 
-                          ? 'border-gray-300 bg-white' 
-                          : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                      }`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
                       disabled={!isInputEnabled}
                     />
                   </div>
@@ -938,7 +910,8 @@ ${errorMessage}
                     <select
                       value={formData.finder_type}
                       onChange={(e) => handleInputChange('finder_type', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                      disabled={!isInputEnabled}
                     >
                       <option value="第三者">第三者</option>
                       <option value="施設占有者">施設占有者</option>
@@ -948,7 +921,7 @@ ${errorMessage}
               </div>
 
               {/* 品物情報セクション */}
-              <div className="bg-gray-50 p-6 rounded-lg">
+              <div className="bg-gray-50 p-6 rounded-lg" style={{ position: 'relative', zIndex: 1 }}>
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">品物情報</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -964,7 +937,8 @@ ${errorMessage}
                         handleInputChange('category_medium', '');
                       }}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                      disabled={!isInputEnabled}
                     >
                       <option value="">選択してください</option>
                       {largeCategoryOptions.map((cat: string) => (
@@ -981,7 +955,7 @@ ${errorMessage}
                       value={formData.category_medium}
                       onChange={e => handleInputChange('category_medium', e.target.value)}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
                       disabled={!formData.category_large}
                     >
                       <option value="">選択してください</option>
@@ -1004,14 +978,7 @@ ${errorMessage}
                       }}
                       required
                       placeholder="例: ハンドバッグ"
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        isInputEnabled 
-                          ? 'border-gray-300 bg-white' 
-                          : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                      }`}
-                      style={{ 
-                        pointerEvents: isInputEnabled ? 'auto' : 'none'
-                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
                       disabled={!isInputEnabled}
                     />
                   </div>
@@ -1029,14 +996,7 @@ ${errorMessage}
                       }}
                       required
                       placeholder="例: 黒"
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        isInputEnabled 
-                          ? 'border-gray-300 bg-white' 
-                          : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                      }`}
-                      style={{ 
-                        pointerEvents: isInputEnabled ? 'auto' : 'none'
-                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
                       disabled={!isInputEnabled}
                     />
                   </div>
@@ -1054,14 +1014,7 @@ ${errorMessage}
                       required
                       rows={3}
                       placeholder="例: 革製、ブランドロゴあり、サイズ約30cm"
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        isInputEnabled 
-                          ? 'border-gray-300 bg-white' 
-                          : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                      }`}
-                      style={{ 
-                        pointerEvents: isInputEnabled ? 'auto' : 'none'
-                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
                       disabled={!isInputEnabled}
                     />
                   </div>
@@ -1069,7 +1022,7 @@ ${errorMessage}
               </div>
 
               {/* 所有権・報酬セクション */}
-              <div className="bg-gray-50 p-6 rounded-lg">
+              <div className="bg-gray-50 p-6 rounded-lg" style={{ position: 'relative', zIndex: 1 }}>
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">所有権・報酬</h3>
                 
                 <div className="space-y-4">
@@ -1103,7 +1056,7 @@ ${errorMessage}
 
               {/* 拾得者情報セクション (所有権・報酬主張時のみ表示) */}
               {formData.claims_ownership || formData.claims_reward ? (
-                <div className="bg-gray-50 p-6 rounded-lg">
+                <div className="bg-gray-50 p-6 rounded-lg" style={{ position: 'relative', zIndex: 1 }}>
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">拾得者情報</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -1116,14 +1069,7 @@ ${errorMessage}
                          onChange={(e) => handleFinderNameChange(e.target.value)}
                          required
                          placeholder="例: ヤマダタロウ"
-                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                           isInputEnabled 
-                             ? 'border-gray-300 bg-white' 
-                             : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                         }`}
-                         style={{ 
-                           pointerEvents: isInputEnabled ? 'auto' : 'none'
-                         }}
+                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
                          disabled={!isInputEnabled}
                        />
                     </div>
@@ -1137,14 +1083,7 @@ ${errorMessage}
                          onChange={(e) => handleFinderPhoneChange(e.target.value)}
                          required
                          placeholder="例: 09012345678"
-                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                           isInputEnabled 
-                             ? 'border-gray-300 bg-white' 
-                             : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                         }`}
-                         style={{ 
-                           pointerEvents: isInputEnabled ? 'auto' : 'none'
-                         }}
+                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
                          disabled={!isInputEnabled}
                        />
                     </div>
