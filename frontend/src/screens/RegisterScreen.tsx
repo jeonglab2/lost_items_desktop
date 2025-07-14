@@ -114,6 +114,8 @@ const RegisterScreen: React.FC = () => {
 
   // 分類データの状態
   const [classifications, setClassifications] = useState<any>({ categories: [] });
+  const [suggestedCategory, setSuggestedCategory] = useState<any>(null);
+  const [isSuggesting, setIsSuggesting] = useState(false);
 
   useEffect(() => {
     fetch('./item_classification.json')
@@ -540,7 +542,55 @@ ${errorMessage}
       ...prev,
       [field]: value,
     }));
+    
+    // 品名が変更された場合、自動分類を提案
+    if (field === 'name' && value.trim()) {
+      handleNameChange(value);
+    }
   }, []);
+
+  // 品名変更時の自動分類提案
+  const handleNameChange = async (name: string) => {
+    if (!name.trim()) {
+      setSuggestedCategory(null);
+      return;
+    }
+    
+    // 入力から1秒後に分類提案を実行（デバウンス）
+    setTimeout(async () => {
+      try {
+        setIsSuggesting(true);
+        const response = await axios.post('http://localhost:8000/suggest-category', {
+          name: name
+        });
+        
+        const suggestion = response.data;
+        if (suggestion.category_large !== "その他" || suggestion.category_medium !== "その他") {
+          setSuggestedCategory(suggestion);
+        } else {
+          setSuggestedCategory(null);
+        }
+      } catch (error) {
+        console.error('分類提案エラー:', error);
+        setSuggestedCategory(null);
+      } finally {
+        setIsSuggesting(false);
+      }
+    }, 1000);
+  };
+
+  // 分類提案を適用
+  const applySuggestion = () => {
+    if (suggestedCategory) {
+      setFormData(prev => ({
+        ...prev,
+        category_large: suggestedCategory.category_large,
+        category_medium: suggestedCategory.category_medium,
+        // 品名は変更しない（入力された品名をそのまま保持）
+      }));
+      setSuggestedCategory(null);
+    }
+  };
 
   // 氏名の入力処理
   const handleFinderNameChange = (value: string) => {
@@ -969,18 +1019,59 @@ ${errorMessage}
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       品名 *
                     </label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => {
-                        console.log('品名入力:', e.target.value);
-                        handleInputChange('name', e.target.value);
-                      }}
-                      required
-                      placeholder="例: ハンドバッグ"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
-                      disabled={!isInputEnabled}
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => {
+                          console.log('品名入力:', e.target.value);
+                          handleInputChange('name', e.target.value);
+                        }}
+                        required
+                        placeholder="例: ハンドバッグ"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                        disabled={!isInputEnabled}
+                      />
+                      {isSuggesting && (
+                        <div className="absolute right-2 top-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* 分類提案の表示 */}
+                    {suggestedCategory && (
+                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-blue-800 mb-1">
+                              AI分類提案
+                            </div>
+                            <div className="text-xs text-blue-600 space-y-1">
+                              <div>大分類: {suggestedCategory.category_large}</div>
+                              <div>中分類: {suggestedCategory.category_medium}</div>
+                              <div>信頼度: {(parseFloat(suggestedCategory.confidence) * 100).toFixed(1)}%</div>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2 ml-3">
+                            <button
+                              type="button"
+                              onClick={applySuggestion}
+                              className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                            >
+                              適用
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSuggestedCategory(null)}
+                              className="px-3 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600"
+                            >
+                              無視
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div>
@@ -1001,6 +1092,7 @@ ${errorMessage}
                     />
                   </div>
                   
+                  {/* 特徴・詳細欄 */}
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       特徴・詳細 *
@@ -1021,75 +1113,77 @@ ${errorMessage}
                 </div>
               </div>
 
-              {/* 所有権・報酬セクション */}
-              <div className="bg-gray-50 p-6 rounded-lg" style={{ position: 'relative', zIndex: 1 }}>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">所有権・報酬</h3>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="claims_ownership"
-                      checked={formData.claims_ownership}
-                      onChange={(e) => handleInputChange('claims_ownership', e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="claims_ownership" className="ml-2 block text-sm text-gray-700">
-                      拾得者が所有権を主張
-                    </label>
+                  {/* 所有権・報酬セクション */}
+                  <div className="bg-gray-50 p-6 rounded-lg" style={{ position: 'relative', zIndex: 1 }}>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">所有権・報酬</h3>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="claims_ownership"
+                          checked={formData.claims_ownership}
+                          onChange={(e) => handleInputChange('claims_ownership', e.target.checked)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="claims_ownership" className="ml-2 block text-sm text-gray-700">
+                          拾得者が所有権を主張
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="claims_reward"
+                          checked={formData.claims_reward}
+                          onChange={(e) => handleInputChange('claims_reward', e.target.checked)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="claims_reward" className="ml-2 block text-sm text-gray-700">
+                          拾得者が報酬を要求
+                        </label>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="claims_reward"
-                      checked={formData.claims_reward}
-                      onChange={(e) => handleInputChange('claims_reward', e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="claims_reward" className="ml-2 block text-sm text-gray-700">
-                      拾得者が報酬を要求
-                    </label>
-                  </div>
-                </div>
-              </div>
 
-              {/* 拾得者情報セクション (所有権・報酬主張時のみ表示) */}
-              {formData.claims_ownership || formData.claims_reward ? (
-                <div className="bg-gray-50 p-6 rounded-lg" style={{ position: 'relative', zIndex: 1 }}>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">拾得者情報</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        氏名(全角カタカナ) *
-                      </label>
-                      <input
-                         type="text"
-                         value={formData.finder_name}
-                         onChange={(e) => handleFinderNameChange(e.target.value)}
-                         required
-                         placeholder="例: ヤマダタロウ"
-                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
-                         disabled={!isInputEnabled}
-                       />
+                  {/* 拾得者情報セクション (所有権・報酬主張時のみ表示) */}
+                  {formData.claims_ownership || formData.claims_reward ? (
+                    <div className="bg-gray-50 p-6 rounded-lg" style={{ position: 'relative', zIndex: 1 }}>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">拾得者情報</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            氏名(全角カタカナ) *
+                          </label>
+                          <input
+                             type="text"
+                             value={formData.finder_name}
+                             onChange={(e) => handleFinderNameChange(e.target.value)}
+                             required
+                             placeholder="例: ヤマダタロウ"
+                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                             disabled={!isInputEnabled}
+                           />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            電話番号(ハイフンなし, 半角英数) *
+                          </label>
+                          <input
+                             type="tel"
+                             value={formData.finder_phone}
+                             onChange={(e) => handleFinderPhoneChange(e.target.value)}
+                             required
+                             placeholder="例: 09012345678"
+                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                             disabled={!isInputEnabled}
+                           />
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        電話番号(ハイフンなし, 半角英数) *
-                      </label>
-                      <input
-                         type="tel"
-                         value={formData.finder_phone}
-                         onChange={(e) => handleFinderPhoneChange(e.target.value)}
-                         required
-                         placeholder="例: 09012345678"
-                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
-                         disabled={!isInputEnabled}
-                       />
-                    </div>
-                  </div>
-                </div>
-              ) : null}
+                  ) : null}
+
+                  
 
               {/* 送信ボタン */}
               <div className="flex justify-end space-x-4">

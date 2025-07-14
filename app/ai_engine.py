@@ -659,12 +659,42 @@ class AIEngine:
         
         for keyword in keywords:
             keyword_lower = keyword.lower()
-            if keyword_lower in features_lower:
+            
+            # 完全一致（最高スコア）
+            if keyword_lower == features_lower:
+                score += 2.0
+            # 部分一致（高スコア）
+            elif keyword_lower in features_lower:
                 score += 1.0
+            # 単語単位での部分一致（中スコア）
             elif any(word in features_lower for word in keyword_lower.split()):
                 score += 0.5
+            # 文字列の類似度（低スコア）
+            else:
+                # 文字列の類似度を計算
+                similarity = self._calculate_string_similarity(features_lower, keyword_lower)
+                if similarity > 0.7:  # 70%以上の類似度
+                    score += similarity * 0.3
         
         return score / len(keywords) if keywords else 0.0
+    
+    def _calculate_string_similarity(self, str1: str, str2: str) -> float:
+        """文字列の類似度を計算（レーベンシュタイン距離ベース）"""
+        if not str1 or not str2:
+            return 0.0
+        
+        # 簡易的な類似度計算
+        if str1 == str2:
+            return 1.0
+        
+        # 共通文字数をカウント
+        common_chars = set(str1) & set(str2)
+        total_chars = set(str1) | set(str2)
+        
+        if not total_chars:
+            return 0.0
+        
+        return len(common_chars) / len(total_chars)
     
     def _calculate_confidence(self, classification_result: Dict, features: str, detected_objects: List[Dict]) -> float:
         """分類結果の信頼度を計算"""
@@ -771,6 +801,117 @@ class AIEngine:
         except Exception as e:
             logger.error(f"セマンティック検索エラー: {e}")
             return []
+
+    def suggest_category_by_name(self, item_name: str) -> Dict:
+        """
+        品名から分類を提案
+        
+        Args:
+            item_name: 品名
+            
+        Returns:
+            分類提案結果の辞書
+        """
+        try:
+            if not item_name or not item_name.strip():
+                return self._get_fallback_result()
+            
+            # 品名を詳細に分析して特徴を抽出
+            features = self._extract_features_from_name(item_name)
+            
+            # 分類提案
+            classification_result = self._classify_item(features, [])
+            
+            # 信頼度計算
+            confidence = self._calculate_confidence(classification_result, features, [])
+            
+            return {
+                "large_category": classification_result.get("large_category", "その他"),
+                "medium_category": classification_result.get("medium_category", "その他"),
+                "name": item_name,  # 入力された品名をそのまま返す
+                "confidence": confidence
+            }
+            
+        except Exception as e:
+            logger.error(f"品名からの分類提案エラー: {e}")
+            return self._get_fallback_result()
+    
+    def _extract_features_from_name(self, item_name: str) -> str:
+        """品名から特徴を抽出"""
+        features = []
+        
+        # 基本の品名
+        features.append(f"品名: {item_name}")
+        
+        # 品名の長さによる特徴
+        if len(item_name) <= 5:
+            features.append("短い品名")
+        elif len(item_name) <= 10:
+            features.append("中程度の品名")
+        else:
+            features.append("長い品名")
+        
+        # 品名に含まれる可能性のある特徴を分析
+        name_lower = item_name.lower()
+        
+        # 材質の特徴
+        material_keywords = {
+            "革": "革製", "皮": "革製", "leather": "革製",
+            "布": "布製", "綿": "布製", "cotton": "布製",
+            "金属": "金属製", "金": "金属製", "銀": "金属製", "metal": "金属製",
+            "プラスチック": "プラスチック製", "plastic": "プラスチック製",
+            "木": "木製", "wood": "木製", "竹": "竹製"
+        }
+        
+        for keyword, material in material_keywords.items():
+            if keyword in name_lower:
+                features.append(material)
+                break
+        
+        # 色の特徴
+        color_keywords = {
+            "黒": "黒色", "白": "白色", "赤": "赤色", "青": "青色", "緑": "緑色",
+            "黄": "黄色", "紫": "紫色", "ピンク": "ピンク色", "オレンジ": "オレンジ色",
+            "茶": "茶色", "グレー": "グレー色", "金": "金色", "銀": "銀色",
+            "black": "黒色", "white": "白色", "red": "赤色", "blue": "青色"
+        }
+        
+        for keyword, color in color_keywords.items():
+            if keyword in name_lower:
+                features.append(color)
+                break
+        
+        # サイズの特徴
+        size_keywords = {
+            "小": "小型", "大": "大型", "中": "中型",
+            "mini": "小型", "large": "大型", "small": "小型"
+        }
+        
+        for keyword, size in size_keywords.items():
+            if keyword in name_lower:
+                features.append(size)
+                break
+        
+        return ", ".join(features)
+
+    def count_cash_from_image(self, image_path: str) -> Dict:
+        """
+        画像から日本の紙幣・硬貨の枚数を推定（ダミー実装）
+        """
+        # TODO: 本格的な画像認識ロジックを実装
+        # 現時点ではダミーで全て0を返す
+        return {
+            "10000": 0,
+            "5000": 0,
+            "2000": 0,
+            "1000": 0,
+            "500": 0,
+            "100": 0,
+            "50": 0,
+            "10": 0,
+            "5": 0,
+            "1": 0
+        }
 
 # グローバルAIエンジンインスタンス
 ai_engine = AIEngine() 

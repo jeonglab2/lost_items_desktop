@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, Query, Request
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict
 from pydantic import BaseModel
 from app.database import SessionLocal
 from app.models import Item, Facility
@@ -396,6 +396,74 @@ def upload_item_image(item_id: str, file: UploadFile = File(...), db: Session = 
     db.commit()
     db.refresh(item)
     return {"image_url": image_url}
+
+@app.post("/suggest-category", response_model=Dict[str, str])
+def suggest_category(request: Dict[str, str]):
+    """
+    品名から分類を提案するAPI
+    
+    Args:
+        request: {"name": "品名"}
+        
+    Returns:
+        分類提案結果
+    """
+    try:
+        item_name = request.get("name", "").strip()
+        if not item_name:
+            return {
+                "category_large": "その他",
+                "category_medium": "その他",
+                "name": "不明",
+                "confidence": "0.0"
+            }
+        
+        # AIエンジンを使用して分類を提案
+        result = ai_engine.suggest_category_by_name(item_name)
+        
+        return {
+            "category_large": result.get("large_category", "その他"),
+            "category_medium": result.get("medium_category", "その他"),
+            "name": result.get("name", item_name),
+            "confidence": str(result.get("confidence", 0.0))
+        }
+        
+    except Exception as e:
+        logging_config.log_ai_operation(
+            operation="category_suggestion",
+            duration=0.0, # 推定時間は不明
+            success=False,
+            details={"error": str(e)}
+        )
+        return {
+            "category_large": "その他",
+            "category_medium": "その他",
+            "name": "不明",
+            "confidence": "0.0"
+        }
+
+@app.post("/count-cash")
+def count_cash(file: UploadFile = File(...)):
+    """
+    財布内現金カウントAPI
+    画像から日本の紙幣・硬貨の枚数を推定
+    """
+    import tempfile
+    import os
+    temp_file_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
+            content = file.file.read()
+            temp_file.write(content)
+            temp_file_path = temp_file.name
+        # AIエンジンで現金カウント
+        result = ai_engine.count_cash_from_image(temp_file_path)
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        if temp_file_path and os.path.exists(temp_file_path):
+            os.unlink(temp_file_path)
 
 app.mount("/static", StaticFiles(directory=static_path), name="static")
 
