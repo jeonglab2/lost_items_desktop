@@ -112,6 +112,24 @@ const RegisterScreen: React.FC = () => {
     finder_phone: '',
   });
 
+  // 現金・財布の詳細情報の状態
+  const [cashDetails, setCashDetails] = useState({
+    // 硬貨（1円、5円、10円、50円、100円、500円）
+    coin_1: '',
+    coin_5: '',
+    coin_10: '',
+    coin_50: '',
+    coin_100: '',
+    coin_500: '',
+    // 紙幣（1000円、2000円、5000円、10000円）
+    bill_1000: '',
+    bill_2000: '',
+    bill_5000: '',
+    bill_10000: ''
+  });
+  // クレジットカード枚数（財布類のみ）
+  const [creditCardCount, setCreditCardCount] = useState('');
+
   // 分類データの状態
   const [classifications, setClassifications] = useState<any>({ categories: [] });
   const [suggestedCategory, setSuggestedCategory] = useState<any>(null);
@@ -590,6 +608,11 @@ ${errorMessage}
       }));
       setSuggestedCategory(null);
     }
+  };
+
+  // 現金・財布の分類かどうかを判定
+  const isCashOrWallet = () => {
+    return formData.category_large === '現金' || formData.category_large === '財布類';
   };
 
   // 氏名の入力処理
@@ -1110,6 +1133,162 @@ ${errorMessage}
                       disabled={!isInputEnabled}
                     />
                   </div>
+
+                  {/* 現金・財布の詳細情報 */}
+                  {isCashOrWallet() && (
+                    <div className="md:col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <h4 className="text-sm font-medium text-blue-800 mb-3">現金詳細情報</h4>
+                      
+                      {/* 硬貨 */}
+                      <div className="mb-4">
+                        <h5 className="text-sm font-medium text-gray-700 mb-2">硬貨</h5>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">1円玉</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={cashDetails.coin_1}
+                              onChange={(e) => setCashDetails(prev => ({ ...prev, coin_1: e.target.value }))}
+                              placeholder="0"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                              disabled={!isInputEnabled}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">5円玉</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={cashDetails.coin_5}
+                              onChange={(e) => setCashDetails(prev => ({ ...prev, coin_5: e.target.value }))}
+                              placeholder="0"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                              disabled={!isInputEnabled}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">10円玉</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={cashDetails.coin_10}
+                              onChange={(e) => setCashDetails(prev => ({ ...prev, coin_10: e.target.value }))}
+                              placeholder="0"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                              disabled={!isInputEnabled}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">50円玉</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={cashDetails.coin_50}
+                              onChange={(e) => setCashDetails(prev => ({ ...prev, coin_50: e.target.value }))}
+                              placeholder="0"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                              disabled={!isInputEnabled}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">100円玉</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={cashDetails.coin_100}
+                              onChange={(e) => setCashDetails(prev => ({ ...prev, coin_100: e.target.value }))}
+                              placeholder="0"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                              disabled={!isInputEnabled}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">500円玉</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={cashDetails.coin_500}
+                              onChange={(e) => setCashDetails(prev => ({ ...prev, coin_500: e.target.value }))}
+                              placeholder="0"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                              disabled={!isInputEnabled}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 紙幣 */}
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-700 mb-2">紙幣</h5>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">1000円札</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={cashDetails.bill_1000}
+                              onChange={(e) => setCashDetails(prev => ({ ...prev, bill_1000: e.target.value }))}
+                              placeholder="0"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                              disabled={!isInputEnabled}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">2000円札</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={cashDetails.bill_2000}
+                              onChange={(e) => setCashDetails(prev => ({ ...prev, bill_2000: e.target.value }))}
+                              placeholder="0"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                              disabled={!isInputEnabled}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">5000円札</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={cashDetails.bill_5000}
+                              onChange={(e) => setCashDetails(prev => ({ ...prev, bill_5000: e.target.value }))}
+                              placeholder="0"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                              disabled={!isInputEnabled}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">10000円札</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={cashDetails.bill_10000}
+                              onChange={(e) => setCashDetails(prev => ({ ...prev, bill_10000: e.target.value }))}
+                              placeholder="0"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                              disabled={!isInputEnabled}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      {/* クレジットカード枚数（財布類のみ） */}
+                      {formData.category_large === '財布類' && (
+                        <div className="mt-4">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">クレジットカードの枚数</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={creditCardCount}
+                            onChange={e => setCreditCardCount(e.target.value)}
+                            placeholder="0"
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:border-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                            disabled={!isInputEnabled}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

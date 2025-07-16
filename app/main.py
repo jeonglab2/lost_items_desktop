@@ -467,13 +467,41 @@ def count_cash(file: UploadFile = File(...)):
 
 app.mount("/static", StaticFiles(directory=static_path), name="static")
 
+def update_storage_location_for_expired_items(db: Session):
+    """
+    登録から7日経過したアイテムの保存場所を「yy-mm-dd-nn-nn」形式に変更するバッチ処理。
+    すでに変更済みのものはスキップ。
+    """
+    JST = timezone(timedelta(hours=9))
+    now = datetime.now(JST)
+    seven_days_ago = now - timedelta(days=7)
+    # 7日以上前に登録され、保存場所がまだ1回しか番号が付いていないものを対象
+    items = db.query(Item).filter(
+        Item.created_at <= seven_days_ago.isoformat(),
+        ~Item.storage_location.op('~')(r'-\\d{2}-\\d{2}$')  # 末尾が-nn-nnでないもの
+    ).all()
+    for item in items:
+        # 末尾の箱番号を抽出
+        parts = item.storage_location.split('-')
+        if len(parts) == 4 and parts[3].isdigit():
+            # 例: yy-mm-dd-nn → yy-mm-dd-nn-nn
+            new_location = f"{parts[0]}-{parts[1]}-{parts[2]}-{parts[3]}-{parts[3]}"
+            item.storage_location = new_location
+            item.updated_at = now.isoformat()
+    db.commit()
+
 # サーバー起動設定
 if __name__ == "__main__":
     import uvicorn
     print("Starting Lost Items Management System Backend Server...")
     print(f"Static files directory: {static_path}")
     print("Server will be available at: http://localhost:8000")
-    
+
+    # バッチ処理の例: 毎日実行する想定
+    db = SessionLocal()
+    update_storage_location_for_expired_items(db)
+    db.close()
+
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",

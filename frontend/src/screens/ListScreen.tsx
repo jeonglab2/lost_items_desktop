@@ -49,6 +49,18 @@ const ListScreen: React.FC = () => {
     semantic_search: false,
   });
 
+  const [currentPage, setCurrentPage] = useState(1); // 現在のページ番号
+  const itemsPerPage = 30; // 1ページあたりの件数
+  const totalPages = Math.ceil(items.length / itemsPerPage); // 総ページ数
+
+  // ページ切り替え時にスクロールをトップに戻す
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
+  // ページごとに表示するアイテムを抽出
+  const paginatedItems = items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   // 初期データ読み込み
   useEffect(() => {
     fetchItems();
@@ -326,68 +338,106 @@ const ListScreen: React.FC = () => {
                 <p className="text-gray-500">拾得物が見つかりませんでした</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {items.map((item) => (
-                  <div
-                    key={item.item_id}
-                    className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => setSelectedItem(item)}
-                  >
-                    {/* 画像 */}
-                    <div className="h-48 bg-gray-100 rounded-t-lg flex items-center justify-center overflow-hidden">
-                      {item.image_url ? (
-                        <img
-                          src={getImageUrl(item.image_url)}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="text-gray-400">画像なし</div>
-                      )}
-                    </div>
-                    
-                    {/* 情報 */}
-                    <div className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-semibold text-gray-800 truncate">{item.name}</h3>
-                        <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(item.status)}`}>
-                          {item.status}
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <div className="flex items-center space-x-2">
-                          <span className={`px-2 py-1 text-xs rounded-full ${getCategoryColor(item.category_large)}`}>
-                            {item.category_large}
-                          </span>
-                          <span className="text-gray-500">•</span>
-                          <span>{item.color}</span>
-                        </div>
-                        
-                        <div className="truncate">{item.features}</div>
-                        <div>拾得場所: {item.found_place}</div>
-                        <div>拾得日時: {formatDateTime(item.found_datetime)}</div>
-                        <div>保管場所: {item.storage_location}</div>
-                        
-                        {(item.claims_ownership || item.claims_reward) && (
-                          <div className="flex space-x-2 mt-2">
-                            {item.claims_ownership && (
-                              <span className="px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">
-                                所有権主張
-                              </span>
-                            )}
-                            {item.claims_reward && (
-                              <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
-                                報酬要求
-                              </span>
-                            )}
-                          </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {paginatedItems.map((item) => (
+                    <div
+                      key={item.item_id}
+                      className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => setSelectedItem(item)}
+                    >
+                      {/* 画像 */}
+                      <div className="h-48 bg-gray-100 rounded-t-lg flex items-center justify-center overflow-hidden">
+                        {item.image_url ? (
+                          <img
+                            src={getImageUrl(item.image_url)}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="text-gray-400">画像なし</div>
                         )}
                       </div>
+                      {/* 情報 */}
+                      <div className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-semibold text-gray-800 truncate">{item.name}</h3>
+                          <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(item.status)}`}>
+                            {item.status}
+                          </span>
+                        </div>
+                        <div className="space-y-1 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2">
+                            <span className={`px-2 py-1 text-xs rounded-full ${getCategoryColor(item.category_large)}`}>
+                              {item.category_large}
+                            </span>
+                            <span className="text-gray-500">•</span>
+                            <span>{item.color}</span>
+                          </div>
+                          <div className="truncate">{item.features}</div>
+                          <div>拾得場所: {item.found_place}</div>
+                          <div>拾得日時: {formatDateTime(item.found_datetime)}</div>
+                          <div>保管場所: {item.storage_location}</div>
+                          {(item.claims_ownership || item.claims_reward) && (
+                            <div className="flex space-x-2 mt-2">
+                              {item.claims_ownership && (
+                                <span className="px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">
+                                  所有権主張
+                                </span>
+                              )}
+                              {item.claims_reward && (
+                                <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
+                                  報酬要求
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
+                  ))}
+                </div>
+                {/* ページネーションUI */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center mt-8 space-x-2">
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                    >
+                      前へ
+                    </button>
+                    {/* ページ番号ボタン（最大5つまで表示） */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(pageNum =>
+                        pageNum === 1 ||
+                        pageNum === totalPages ||
+                        (pageNum >= currentPage - 2 && pageNum <= currentPage + 2)
+                      )
+                      .map((pageNum, idx, arr) => (
+                        <React.Fragment key={pageNum}>
+                          {idx > 0 && pageNum - arr[idx - 1] > 1 && (
+                            <span className="px-2">...</span>
+                          )}
+                          <button
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`px-3 py-1 rounded ${currentPage === pageNum ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                            disabled={currentPage === pageNum}
+                          >
+                            {pageNum}
+                          </button>
+                        </React.Fragment>
+                      ))}
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                    >
+                      次へ
+                    </button>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
         </main>
