@@ -1,496 +1,1432 @@
-{
-  "version": "1.0",
-  "description": "拾得物の分類定義ファイル。AIが品名や特徴から適切な分類を推論するために使用します。",
-  "categories": [
-    {
-      "large_category": "現金",
-      "medium_categories": [
-        {
-          "medium_category": "現金",
-          "keywords": ["現金", "紙幣", "硬貨", "cash", "money"]
-        }
-      ]
-    },
-    {
-      "large_category": "かばん類",
-      "medium_categories": [
-        {
-          "medium_category": "手提げかばん",
-          "keywords": ["ハンドバッグ", "ビジネスバッグ", "トートバッグ", "ボストンバッグ", "アタッシュケース", "トランク", "学生かばん", "ブリーフケース", "handbag", "tote bag", "business bag"]
-        },
-        {
-          "medium_category": "肩掛けかばん",
-          "keywords": ["ショルダーバッグ", "リュックサック", "デイパック", "バックパック", "メッセンジャーバッグ", "shoulder bag", "backpack", "daypack"]
-        },
-        {
-          "medium_category": "抱えかばん",
-          "keywords": ["セカンドバッグ", "クラッチバッグ", "clutch bag"]
-        },
-        {
-          "medium_category": "小物入れ",
-          "keywords": ["ポーチ", "ウエストポーチ", "ポシェット", "きんちゃく", "たばこ入れ", "シガレットケース", "pouch", "waist pouch"]
-        },
-        {
-          "medium_category": "その他かばん類",
-          "keywords": ["スーツケース", "キャリーケース", "ハンガーケース", "エコバッグ", "クーラーバッグ", "suitcase", "carrier case"]
-        }
-      ]
-    },
-    {
-      "large_category": "袋・封筒類",
-      "medium_categories": [
-        {
-          "medium_category": "袋",
-          "keywords": ["手提げ袋", "ビニール袋", "紙袋", "レジ袋", "布袋", "エコバッグ", "shopping bag"]
-        },
-        {
-          "medium_category": "封筒",
-          "keywords": ["封筒", "お年玉袋", "のし袋", "薬袋", "書類袋", "envelope"]
-        }
-      ]
-    },
-    {
-      "large_category": "財布類",
-      "medium_categories": [
-        {
-          "medium_category": "財布",
-          "keywords": ["財布", "長財布", "二つ折り財布", "札入れ", "wallet"]
-        },
-        {
-          "medium_category": "がま口",
-          "keywords": ["がま口", "clasp purse"]
-        },
-        {
-          "medium_category": "小銭入れ",
-          "keywords": ["小銭入れ", "コインケース", "coin case", "coin purse"]
-        }
-      ]
-    },
-    {
-      "large_category": "カードケース類",
-      "medium_categories": [
-        {
-          "medium_category": "カードケース",
-          "keywords": ["カードケース", "定期券入れ", "パスケース", "免許証入れ", "card case", "pass case"]
-        },
-        {
-          "medium_category": "名刺入れ",
-          "keywords": ["名刺入れ", "business card holder"]
-        }
-      ]
-    },
-    {
-      "large_category": "カメラ類",
-      "medium_categories": [
-        {
-          "medium_category": "カメラ",
-          "keywords": ["デジタルカメラ", "デジカメ", "一眼レフカメラ", "ミラーレス一眼", "コンパクトカメラ", "アクションカメラ", "GoPro", "使い捨てカメラ", "インスタントカメラ", "チェキ", "camera"]
-        },
-        {
-          "medium_category": "ビデオカメラ",
-          "keywords": ["ビデオカメラ", "デジタルビデオカメラ", "ハンディカム", "camcorder"]
-        },
-        {
-          "medium_category": "カメラ付属品類",
-          "keywords": ["カメラケース", "フィルム", "三脚", "カメラレンズ", "バッテリー", "充電器", "SDカード", "メモリーカード", "camera accessories", "lens", "tripod"]
-        }
-      ]
-    },
-    {
-      "large_category": "時計類",
-      "medium_categories": [
-        {
-          "medium_category": "腕時計",
-          "keywords": ["腕時計", "スマートウォッチ", "Apple Watch", "G-shock", "デジタル腕時計", "アナログ腕時計", "wristwatch", "smartwatch"]
-        },
-        {
-          "medium_category": "その他時計類",
-          "keywords": ["置時計", "懐中時計", "壁掛時計", "ストップウォッチ", "clock", "pocket watch"]
-        }
-      ]
-    },
-    {
-      "large_category": "めがね類",
-      "medium_categories": [
-        {
-          "medium_category": "めがね",
-          "keywords": ["めがね", "眼鏡", "老眼鏡", "リーディンググラス", "伊達メガネ", "PCメガネ", "ブルーライトカットメガネ", "glasses", "eyeglasses"]
-        },
-        {
-          "medium_category": "サングラス類",
-          "keywords": ["サングラス", "ゴーグル", "sunglasses", "goggles"]
-        },
-        {
-          "medium_category": "コンタクトレンズ",
-          "keywords": ["コンタクトレンズ", "コンタクトケース", "contact lenses"]
-        },
-        {
-          "medium_category": "双眼鏡類",
-          "keywords": ["双眼鏡", "単眼鏡", "オペラグラス", "ルーペ", "binoculars", "loupe"]
-        }
-      ]
-    },
-    {
-      "large_category": "電気製品類",
-      "medium_categories": [
-        {
-          "medium_category": "携帯音響品",
-          "keywords": ["MP3プレーヤー", "iPod", "ウォークマン", "ワイヤレスイヤホン", "Bluetoothイヤホン", "AirPods", "イヤホン", "ヘッドホン", "携帯ラジオ", "スマートスピーカー", "Bluetoothスピーカー", "earphones", "headphones", "portable audio"]
-        },
-        {
-          "medium_category": "電子機器",
-          "keywords": ["ノートパソコン", "PC", "ラップトップ", "タブレット", "iPad", "Surface", "Androidタブレット", "電卓", "電子辞書", "電子手帳", "スマートウォッチ", "Apple Watch", "モバイルバッテリー", "laptop", "tablet", "calculator", "e-dictionary", "smartwatch", "mobile battery"]
-        },
-        {
-          "medium_category": "電子玩具",
-          "keywords": ["ゲーム機", "Nintendo Switch", "PlayStation", "PS5", "PS4", "Xbox", "ゲームソフト", "game console", "game software"]
-        },
-        {
-          "medium_category": "外部記録媒体",
-          "keywords": ["USBメモリー", "USBメモリ", "外付けHDD", "外付けSSD", "SDカード", "microSDカード", "メモリーカード", "DVD", "CD", "Blu-ray", "USB flash drive", "external hard drive", "memory card"]
-        },
-        {
-          "medium_category": "電気製品類付属品",
-          "keywords": ["充電器", "ACアダプター", "充電ケーブル", "USBケーブル", "電源コード", "電池", "乾電池", "モバイルバッテリー", "charger", "cable", "battery"]
-        },
-        {
-          "medium_category": "その他電気製品",
-          "keywords": ["防犯ブザー", "ライト", "懐中電灯", "電気かみそり", "シェーバー", "DVDプレーヤー", "Blu-rayプレーヤー", "ドライヤー", "ヘアアイロン", "electric shaver", "hair dryer"]
-        }
-      ]
-    },
-    {
-      "large_category": "携帯電話類",
-      "medium_categories": [
-        {
-          "medium_category": "携帯電話機",
-          "keywords": ["携帯電話", "スマートフォン", "スマホ", "iPhone", "Android", "ガラケー", "フィーチャーフォン", "PHS", "smartphone", "mobile phone"]
-        },
-        {
-          "medium_category": "その他通信機器類",
-          "keywords": ["ポケットベル", "位置情報携帯端末", "GPSトラッカー", "モバイルルーター", "Wi-Fiルーター", "pager", "GPS tracker"]
-        }
-      ]
-    },
-    {
-      "large_category": "貴金属類",
-      "medium_categories": [
-        {
-          "medium_category": "ネックレス",
-          "keywords": ["ネックレス", "チョーカー", "ペンダント", "necklace", "pendant"]
-        },
-        {
-          "medium_category": "指輪",
-          "keywords": ["指輪", "リング", "ring"]
-        },
-        {
-          "medium_category": "ブレスレット",
-          "keywords": ["ブレスレット", "バングル", "bracelet"]
-        },
-        {
-          "medium_category": "イヤリング類",
-          "keywords": ["イヤリング", "ピアス", "earrings"]
-        },
-        {
-          "medium_category": "その他貴金属類",
-          "keywords": ["ブローチ", "アンクレット", "金地金", "インゴット", "brooch", "anklet"]
-        }
-      ]
-    },
-    {
-      "large_category": "趣味・娯楽用品類",
-      "medium_categories": [
-        {
-          "medium_category": "レジャー・スポーツ用品",
-          "keywords": ["グローブ", "ゴルフクラブ", "テニスラケット", "ボール", "スケートボード", "キックボード", "浮き輪", "釣り竿", "クーラーボックス", "sports equipment", "golf club", "tennis racket"]
-        },
-        {
-          "medium_category": "楽器類",
-          "keywords": ["ギター", "笛", "リコーダー", "ハーモニカ", "フルート", "ウクレレ", "musical instrument", "guitar", "flute"]
-        },
-        {
-          "medium_category": "その他趣味・娯楽用品類",
-          "keywords": ["おもちゃ", "ぬいぐるみ", "フィギュア", "プラモデル", "ゲームカード", "トレーディングカード", "遊戯王", "ポケモンカード", "人形", "ドール", "トランプ", "toy", "stuffed animal", "trading card"]
-        }
-      ]
-    },
-    {
-      "large_category": "証明書類・カード類",
-      "medium_categories": [
-        {
-          "medium_category": "運転免許証",
-          "keywords": ["運転免許証", "仮運転免許証", "国際免許証", "driver's license"]
-        },
-        {
-          "medium_category": "身分証明書類",
-          "keywords": ["学生証", "社員証", "パスポート", "マイナンバーカード", "住民基本台帳カード", "外国人登録証", "ID card", "passport", "student ID"]
-        },
-        {
-          "medium_category": "健康保険証類",
-          "keywords": ["健康保険証", "国民健康保険証", "社会保険証", "後期高齢者医療被保険者証", "診察券", "お薬手帳", "health insurance card"]
-        },
-        {
-          "medium_category": "その他証明書類",
-          "keywords": ["身体障害者手帳", "母子手帳", "年金手帳", "印鑑登録証", "自動車検査証", "車検証", "ナンバープレート", "自賠責保険証", "船舶免許証", "無線免許証", "通行証", "各種免許証"]
-        },
-        {
-          "medium_category": "預貯金通帳類",
-          "keywords": ["預貯金通帳", "銀行通帳", "ゆうちょ通帳", "bankbook"]
-        },
-        {
-          "medium_category": "キャッシュカード類",
-          "keywords": ["キャッシュカード", "クレジットカード", "デビットカード", "PiTaPa", "cash card", "credit card"]
-        },
-        {
-          "medium_category": "会員証(カード)類",
-          "keywords": ["会員証", "メンバーズカード", "ポイントカード", "図書館利用者カード", "ビデオレンタルカード", "診察券", "membership card", "point card"]
-        }
-      ]
-    },
-    {
-      "large_category": "有価証券類",
-      "medium_categories": [
-        {
-          "medium_category": "有価証券",
-          "keywords": ["商品券", "図書券", "ギフト券", "ビール券", "おこめ券", "小切手", "株券", "手形", "gift certificate", "voucher"]
-        },
-        {
-          "medium_category": "プリペイドカード類",
-          "keywords": ["プリペイドカード", "交通系ICカード", "Suica", "PASMO", "ICOCA", "Kitaca", "TOICA", "manaca", "SUGOCA", "nimoca", "はやかけん", "テレホンカード", "図書カード", "QUOカード", "prepaid card", "transportation IC card"]
-        },
-        {
-          "medium_category": "定期券類",
-          "keywords": ["定期券", "Suica定期", "ICOCA定期", "PASMO定期", "通学証明書", "commuter pass"]
-        },
-        {
-          "medium_category": "乗車券類",
-          "keywords": ["乗車券", "切符", "回数券", "航空券", "チケット", "ticket", "boarding pass"]
-        },
-        {
-          "medium_category": "その他証券類",
-          "keywords": ["宝くじ", "馬券", "車券", "舟券", "郵便切手", "収入印紙", "はがき", "入場券", "コンサートチケット", "lottery ticket", "stamp"]
-        }
-      ]
-    },
-    {
-      "large_category": "著作品類",
-      "medium_categories": [
-        {
-          "medium_category": "書籍類",
-          "keywords": ["本", "書籍", "文庫本", "雑誌", "単行本", "時刻表", "マンガ", "コミック", "教科書", "参考書", "地図", "book", "magazine", "comic"]
-        },
-        {
-          "medium_category": "ディスク・テープ類",
-          "keywords": ["ビデオソフト", "CDソフト", "MDソフト", "DVDソフト", "Blu-rayソフト", "カセットテープ", "CD", "DVD", "Blu-ray"]
-        },
-        {
-          "medium_category": "その他著作品類",
-          "keywords": ["写真", "ネガ", "絵画", "版画", "イラスト", "スケッチブック", "photo", "picture"]
-        }
-      ]
-    },
-    {
-      "large_category": "手帳・文具類",
-      "medium_categories": [
-        {
-          "medium_category": "手帳・ノート類",
-          "keywords": ["手帳", "スケジュール帳", "アドレス帳", "ノート", "メモ帳", "システム手帳", "diary", "notebook"]
-        },
-        {
-          "medium_category": "印鑑類",
-          "keywords": ["印鑑", "はんこ", "実印", "銀行印", "認印", "シャチハタ", "朱肉", "印鑑ケース", "stamp", "seal"]
-        },
-        {
-          "medium_category": "整理収納用品類",
-          "keywords": ["ファイル", "クリアファイル", "バインダー", "書類入れ", "ケース", "アルバム", "手提げ金庫", "file", "binder", "album"]
-        },
-        {
-          "medium_category": "筆箱・筆記用具類",
-          "keywords": ["筆箱", "ペンケース", "ボールペン", "シャープペンシル", "万年筆", "鉛筆", "マーカー", "蛍光ペン", "消しゴム", "定規", "ハサミ", "カッターナイフ", "pencil case", "pen", "pencil"]
-        }
-      ]
-    },
-    {
-      "large_category": "書類・紙類",
-      "medium_categories": [
-        {
-          "medium_category": "書類",
-          "keywords": ["書類", "領収書", "明細書", "契約書", "履歴書", "保証書", "資料", "賞状", "document", "receipt"]
-        },
-        {
-          "medium_category": "その他紙類",
-          "keywords": ["レシート", "割引券", "クーポン券", "手紙", "はがき", "駐車券", "食券", "名刺", "パンフレット", "カタログ", "チラシ", "receipt", "coupon", "letter"]
-        }
-      ]
-    },
-    {
-      "large_category": "小包・箱類",
-      "medium_categories": [
-        {
-          "medium_category": "小包・箱類",
-          "keywords": ["箱", "ダンボール箱", "菓子箱", "宅配物", "郵便小包", "ゆうパック", "プレゼント", "ギフトボックス", "box", "package", "parcel"]
-        }
-      ]
-    },
-    {
-      "large_category": "衣類・履物類",
-      "medium_categories": [
-        {
-          "medium_category": "帽子類",
-          "keywords": ["帽子", "キャップ", "野球帽", "ニット帽", "ハット", "ヘルメット", "サンバイザー", "耳あて", "hat", "cap"]
-        },
-        {
-          "medium_category": "手袋",
-          "keywords": ["手袋", "グローブ", "ミトン", "gloves"]
-        },
-        {
-          "medium_category": "マフラー類",
-          "keywords": ["マフラー", "スカーフ", "ショール", "ストール", "ネックウォーマー", "ひざ掛け", "ブランケット", "scarf", "muffler", "shawl"]
-        },
-        {
-          "medium_category": "上着類",
-          "keywords": ["上着", "ジャンパー", "ジャケット", "カーディガン", "Tシャツ", "Yシャツ", "ワイシャツ", "ブラウス", "セーター", "トレーナー", "スウェット", "ベスト", "ジレ", "コート", "パーカー", "フリース", "ダウンジャケット", "jacket", "coat", "sweater", "parka", "t-shirt"]
-        },
-        {
-          "medium_category": "ズボン類",
-          "keywords": ["ズボン", "パンツ", "スラックス", "ジーパン", "ジーンズ", "デニム", "スカート", "キュロット", "pants", "trousers", "jeans", "skirt"]
-        },
-        {
-          "medium_category": "上下衣類",
-          "keywords": ["スーツ", "ワンピース", "作業着", "制服", "ユニフォーム", "白衣", "ジャージ", "スポーツウェア", "ウインドブレーカー", "合羽", "レインコート", "着物", "浴衣", "甚平", "パジャマ", "suit", "dress", "uniform"]
-        },
-        {
-          "medium_category": "その他衣類",
-          "keywords": ["下着", "肌着", "パンツ", "ブラジャー", "靴下", "ストッキング", "タイツ", "水着", "ネクタイ", "エプロン", "バンダナ", "ハンカチ", "タオル", "underwear", "socks", "swimsuit", "tie"]
-        },
-        {
-          "medium_category": "衣類付属品",
-          "keywords": ["ベルト", "バックル", "ネクタイピン", "カフスボタン", "サスペンダー", "belt", "tie clip"]
-        },
-        {
-          "medium_category": "履物類",
-          "keywords": ["靴", "シューズ", "スニーカー", "革靴", "パンプス", "ヒール", "ブーツ", "サンダル", "スリッパ", "上履き", "長靴", "ランニングシューズ", "shoes", "sneakers", "boots", "sandals"]
-        }
-      ]
-    },
-    {
-      "large_category": "かさ類",
-      "medium_categories": [
-        {
-          "medium_category": "かさ",
-          "keywords": ["傘", "長傘", "折りたたみ傘", "ビニール傘", "日傘", "umbrella"]
-        }
-      ]
-    },
-    {
-      "large_category": "鍵類",
-      "medium_categories": [
-        {
-          "medium_category": "鍵",
-          "keywords": ["鍵", "キー", "自動車の鍵", "家の鍵", "自転車の鍵", "ロッカーの鍵", "key"]
-        },
-        {
-          "medium_category": "鍵(キーホルダー付)",
-          "keywords": ["キーホルダー", "キーストラップ", "keychain"]
-        },
-        {
-          "medium_category": "鍵(キーケース付)",
-          "keywords": ["キーケース", "key case"]
-        },
-        {
-          "medium_category": "カードキー",
-          "keywords": ["カードキー", "セキュリティカード", "ICカードキー", "入室カード", "card key"]
-        }
-      ]
-    },
-    {
-      "large_category": "生活用品類",
-      "medium_categories": [
-        {
-          "medium_category": "生活用品",
-          "keywords": ["タオル", "ハンカチ", "ライター", "灰皿", "キーホルダー", "ストラップ", "ティッシュ", "ウェットティッシュ", "くし", "ブラシ", "ヘアブラシ", "洗面具", "歯ブラシ", "鏡", "ミラー", "石鹸", "紙おむつ", "扇子", "うちわ", "風呂敷", "クッション", "枕", "ハサミ", "爪切り", "towel", "lighter", "mirror"]
-        },
-        {
-          "medium_category": "食器類",
-          "keywords": ["水筒", "タンブラー", "マグボトル", "弁当箱", "箸", "スプーン", "フォーク", "包丁", "まな板", "タッパー", "食品保存容器", "皿", "コップ", "マグカップ", "water bottle", "lunch box", "dish"]
-        },
-        {
-          "medium_category": "工具類",
-          "keywords": ["工具", "ドライバー", "ペンチ", "レンチ", "スパナ", "メジャー", "tools", "screwdriver"]
-        },
-        {
-          "medium_category": "装飾品類",
-          "keywords": ["名札", "腕章", "バッジ", "ヘアピン", "ヘアゴム", "シュシュ", "かんざし", "コサージュ", "リストバンド", "髪飾り", "badge", "hairpin"]
-        },
-        {
-          "medium_category": "神仏具品類",
-          "keywords": ["お守り", "御守", "数珠", "おみくじ", "絵馬", "お札", "amulet", "rosary"]
-        },
-        {
-          "medium_category": "自転車類",
-          "keywords": ["自転車", "電動自転車", "ロードバイク", "マウンテンバイク", "クロスバイク", "キャリアカート", "ベビーカー", "台車", "タイヤ", "ヘルメット", "bicycle", "stroller"]
-        },
-        {
-          "medium_category": "ケース・カバー類",
-          "keywords": ["ケース", "カバー", "スマホケース", "スマートフォンケース", "めがねケース", "キーケース", "ペットボトルホルダー", "ティッシュケース", "傘カバー", "case", "cover"]
-        }
-      ]
-    },
-    {
-      "large_category": "医療・化粧品類",
-      "medium_categories": [
-        {
-          "medium_category": "薬類",
-          "keywords": ["薬", "錠剤", "粉薬", "塗り薬", "目薬", "絆創膏", "湿布", "サプリメント", "コンタクト洗浄液", "救急箱", "medicine", "pill", "eyedrops"]
-        },
-        {
-          "medium_category": "医療関連品類",
-          "keywords": ["杖", "松葉杖", "万歩計", "歩数計", "体温計", "血圧計", "入れ歯", "義歯", "補聴器", "マスク", "サポーター", "コルセット", "cane", "hearing aid", "thermometer"]
-        },
-        {
-          "medium_category": "化粧品類",
-          "keywords": ["化粧品", "コスメ", "口紅", "リップ", "グロス", "香水", "ファンデーション", "コンパクト", "アイシャドウ", "チーク", "マスカラ", "化粧ポーチ", "cosmetics", "lipstick", "perfume"]
-        }
-      ]
-    },
-    {
-      "large_category": "食料品類",
-      "medium_categories": [
-        {
-          "medium_category": "食料品類",
-          "keywords": ["食品", "お菓子", "スナック", "チョコレート", "飴", "ガム", "パン", "弁当", "おにぎり", "飲料品", "ジュース", "お茶", "水", "ペットボトル", "酒", "ビール", "日本酒", "ワイン", "たばこ", "電子タバコ", "iQOS", "glo", "vape", "food", "beverage", "alcohol", "tobacco"]
-        }
-      ]
-    },
-    {
-      "large_category": "動植物類",
-      "medium_categories": [
-        {
-          "medium_category": "動物",
-          "keywords": ["ペット", "犬", "猫", "ハムスター", "鳥", "昆虫", "pet", "animal"]
-        },
-        {
-          "medium_category": "植物",
-          "keywords": ["植物", "花束", "鉢植え", "観葉植物", "盆栽", "plant", "flower"]
-        },
-        {
-          "medium_category": "動植物関連品",
-          "keywords": ["虫かご", "鳥かご", "水槽", "ペットフード", "ドッグフード", "キャットフード", "ペット用品", "首輪", "リード", "pet supplies", "pet food"]
-        }
-      ]
-    },
-    {
-      "large_category": "その他",
-      "medium_categories": [
-        {
-          "medium_category": "所持禁止物品",
-          "keywords": ["けん銃", "刀", "薬物", "illegal items"]
-        },
-        {
-          "medium_category": "その他",
-          "keywords": ["金庫", "消火器", "看板", "骨董品", "miscellaneous"]
-        }
-      ]
-    }
-  ]
-}
+[
+  {
+    "large_category_id": "cash",
+    "large_category_name_ja": "現金",
+    "medium_categories": [
+      {
+        "medium_category_id": "cash",
+        "medium_category_name_ja": "現金",
+        "priority": 110,
+        "keywords": [
+          { "term": "現金", "weight": 1.0 },
+          { "term": "金", "weight": 0.5 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "bags",
+    "large_category_name_ja": "かばん類",
+    "medium_categories": [
+      {
+        "medium_category_id": "handbags",
+        "medium_category_name_ja": "手提げかばん",
+        "priority": 70,
+        "keywords": [
+          { "term": "ハンドバッグ", "weight": 1.0 },
+          { "term": "ビジネスバッグ", "weight": 1.0 },
+          { "term": "トートバッグ", "weight": 1.0 },
+          { "term": "ボストンバッグ", "weight": 1.0 },
+          { "term": "スポーツバッグ", "weight": 1.0 },
+          { "term": "アタッシュケース", "weight": 1.0 },
+          { "term": "トランク", "weight": 1.0 },
+          { "term": "シューズバッグ", "weight": 1.0 },
+          { "term": "学生かばん", "weight": 1.0 },
+          { "term": "手提げかばん", "weight": 1.0 },
+          { "term": "エコバッグ", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "shoulder_bags",
+        "medium_category_name_ja": "肩掛けかばん",
+        "priority": 70,
+        "keywords": [
+          { "term": "ショルダーバッグ", "weight": 1.0 },
+          { "term": "リュックサック", "weight": 1.0 },
+          { "term": "デイパック", "weight": 1.0 },
+          { "term": "バックパック", "weight": 1.0 },
+          { "term": "メッセンジャーバッグ", "weight": 1.0 },
+          { "term": "肩掛けかばん", "weight": 1.0 },
+          { "term": "ボディバッグ", "weight": 1.0 },
+          { "term": "サコッシュ", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "clutch_bags",
+        "medium_category_name_ja": "抱えかばん",
+        "priority": 68,
+        "keywords": [
+          { "term": "セカンドバッグ", "weight": 1.0 },
+          { "term": "クラッチバッグ", "weight": 1.0 },
+          { "term": "抱えかばん", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "pouches",
+        "medium_category_name_ja": "小物入れ",
+        "priority": 65,
+        "keywords": [
+          { "term": "ポーチ", "weight": 1.0 },
+          { "term": "ウエストポーチ", "weight": 1.0 },
+          { "term": "ポシェット", "weight": 1.0 },
+          { "term": "きんちゃく", "weight": 1.0 },
+          { "term": "たばこ入れ", "weight": 1.0 },
+          { "term": "小物入れ", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "other_bags",
+        "medium_category_name_ja": "その他かばん類",
+        "priority": 60,
+        "keywords": [
+          { "term": "スーツケース", "weight": 1.0 },
+          { "term": "キャリーケース", "weight": 1.0 },
+          { "term": "ハンガーケース", "weight": 1.0 },
+          { "term": "かばん", "weight": 0.2 },
+          { "term": "バッグ", "weight": 0.2 },
+          { "term": "バック", "weight": 0.2 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "sacks_envelopes",
+    "large_category_name_ja": "袋・封筒類",
+    "medium_categories": [
+      {
+        "medium_category_id": "sacks",
+        "medium_category_name_ja": "袋",
+        "priority": 20,
+        "keywords": [
+          { "term": "手提げ袋", "weight": 1.0 },
+          { "term": "レジ袋", "weight": 1.0 },
+          { "term": "ビニール袋", "weight": 1.0 },
+          { "term": "紙袋", "weight": 1.0 },
+          { "term": "布袋", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "envelopes",
+        "medium_category_name_ja": "封筒",
+        "priority": 20,
+        "keywords": [
+          { "term": "お年玉袋", "weight": 1.0 },
+          { "term": "のし袋", "weight": 1.0 },
+          { "term": "薬袋", "weight": 1.0 },
+          { "term": "書類袋", "weight": 1.0 },
+          { "term": "封筒", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "wallets",
+    "large_category_name_ja": "財布類",
+    "medium_categories": [
+      {
+        "medium_category_id": "wallet",
+        "medium_category_name_ja": "財布",
+        "priority": 95,
+        "keywords": [
+          { "term": "札入れ", "weight": 1.0 },
+          { "term": "財布", "weight": 1.0 },
+          { "term": "ウォレット", "weight": 1.0 },
+          { "term": "長財布", "weight": 1.0 },
+          { "term": "二つ折り財布", "weight": 1.0 },
+          { "term": "三つ折り財布", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "gamaguchi",
+        "medium_category_name_ja": "がま口",
+        "priority": 94,
+        "keywords": [
+          { "term": "がま口", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "coin_purse",
+        "medium_category_name_ja": "小銭入れ",
+        "priority": 93,
+        "keywords": [
+          { "term": "小銭入れ", "weight": 1.0 },
+          { "term": "コインケース", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "card_cases",
+    "large_category_name_ja": "カードケース類",
+    "medium_categories": [
+      {
+        "medium_category_id": "card_case",
+        "medium_category_name_ja": "カードケース",
+        "priority": 92,
+        "keywords": [
+          { "term": "定期券入れ", "weight": 1.0 },
+          { "term": "パスケース", "weight": 1.0 },
+          { "term": "免許証入れ", "weight": 1.0 },
+          { "term": "カード入れ", "weight": 1.0 },
+          { "term": "カードケース", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "business_card_holder",
+        "medium_category_name_ja": "名刺入れ",
+        "priority": 75,
+        "keywords": [
+          { "term": "名刺入れ", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "cameras",
+    "large_category_name_ja": "カメラ類",
+    "medium_categories": [
+      {
+        "medium_category_id": "camera",
+        "medium_category_name_ja": "カメラ",
+        "priority": 80,
+        "keywords": [
+          { "term": "デジタルカメラ", "weight": 1.0 },
+          { "term": "デジカメ", "weight": 1.0 },
+          { "term": "コンパクトカメラ", "weight": 1.0 },
+          { "term": "一眼レフカメラ", "weight": 1.0 },
+          { "term": "使い捨てカメラ", "weight": 1.0 },
+          { "term": "インスタントカメラ", "weight": 1.0 },
+          { "term": "チェキ", "weight": 1.0 },
+          { "term": "GoPro", "weight": 1.2 },
+          { "term": "アクションカメラ", "weight": 1.0 },
+          { "term": "ドローン", "weight": 1.0 },
+          { "term": "カメラ", "weight": 0.5 }
+        ]
+      },
+      {
+        "medium_category_id": "video_camera",
+        "medium_category_name_ja": "ビデオカメラ",
+        "priority": 80,
+        "keywords": [
+          { "term": "デジタルビデオカメラ", "weight": 1.0 },
+          { "term": "ビデオカメラ", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "camera_accessories",
+        "medium_category_name_ja": "カメラ付属品類",
+        "priority": 45,
+        "keywords": [
+          { "term": "カメラケース", "weight": 1.0 },
+          { "term": "フィルム", "weight": 1.0 },
+          { "term": "三脚", "weight": 1.0 },
+          { "term": "カメラレンズ", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "watches",
+    "large_category_name_ja": "時計類",
+    "medium_categories": [
+      {
+        "medium_category_id": "wristwatch",
+        "medium_category_name_ja": "腕時計",
+        "priority": 85,
+        "keywords": [
+          { "term": "腕時計", "weight": 1.0 },
+          { "term": "スマートウォッチ", "weight": 1.2 },
+          { "term": "Apple Watch", "weight": 1.5 },
+          { "term": "G-SHOCK", "weight": 1.2 },
+          { "term": "Fitbit", "weight": 1.2 },
+          { "term": "Garmin", "weight": 1.2 },
+          { "term": "Pixel Watch", "weight": 1.2 }
+        ]
+      },
+      {
+        "medium_category_id": "other_watches",
+        "medium_category_name_ja": "その他時計類",
+        "priority": 60,
+        "keywords": [
+          { "term": "置時計", "weight": 1.0 },
+          { "term": "懐中時計", "weight": 1.0 },
+          { "term": "壁掛時計", "weight": 1.0 },
+          { "term": "時計", "weight": 0.5 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "glasses",
+    "large_category_name_ja": "めがね類",
+    "medium_categories": [
+      {
+        "medium_category_id": "eyeglasses",
+        "medium_category_name_ja": "めがね",
+        "priority": 70,
+        "keywords": [
+          { "term": "めがね", "weight": 1.0 },
+          { "term": "眼鏡", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "sunglasses",
+        "medium_category_name_ja": "サングラス類",
+        "priority": 68,
+        "keywords": [
+          { "term": "サングラス", "weight": 1.0 },
+          { "term": "ゴーグル", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "contact_lenses",
+        "medium_category_name_ja": "コンタクトレンズ",
+        "priority": 65,
+        "keywords": [
+          { "term": "コンタクトレンズ", "weight": 1.0 },
+          { "term": "コンタクト", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "binoculars",
+        "medium_category_name_ja": "双眼鏡類",
+        "priority": 50,
+        "keywords": [
+          { "term": "双眼鏡", "weight": 1.0 },
+          { "term": "レンズ", "weight": 1.0 },
+          { "term": "ルーペ", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "electronics",
+    "large_category_name_ja": "電気製品類",
+    "medium_categories": [
+      {
+        "medium_category_id": "mobile_audio",
+        "medium_category_name_ja": "携帯音響品",
+        "priority": 78,
+        "keywords": [
+          { "term": "MP3プレーヤー", "weight": 1.0 },
+          { "term": "デジタルオーディオプレーヤ", "weight": 1.0 },
+          { "term": "携帯ラジオ", "weight": 1.0 },
+          { "term": "MDプレーヤー", "weight": 1.0 },
+          { "term": "CDプレーヤー", "weight": 1.0 },
+          { "term": "ウォークマン", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "audio_accessories",
+        "medium_category_name_ja": "音響関連品",
+        "priority": 76,
+        "keywords": [
+          { "term": "イヤホン", "weight": 1.0 },
+          { "term": "イヤフォン", "weight": 1.0 },
+          { "term": "ワイヤレスイヤホン", "weight": 1.2 },
+          { "term": "Bluetoothイヤホン", "weight": 1.2 },
+          { "term": "AirPods", "weight": 1.5 },
+          { "term": "ヘッドホン", "weight": 1.0 },
+          { "term": "ヘッドフォン", "weight": 1.0 },
+          { "term": "ヘッドセット", "weight": 1.0 },
+          { "term": "マイク", "weight": 1.0 },
+          { "term": "スピーカー", "weight": 1.0 },
+          { "term": "骨伝導イヤホン", "weight": 1.0 },
+          { "term": "スマートスピーカー", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "electronic_devices",
+        "medium_category_name_ja": "電子機器",
+        "priority": 82,
+        "keywords": [
+          { "term": "ノートパソコン", "weight": 1.0 },
+          { "term": "PC", "weight": 1.0 },
+          { "term": "MacBook", "weight": 1.2 },
+          { "term": "iPad", "weight": 1.2 },
+          { "term": "Surface", "weight": 1.2 },
+          { "term": "Chromebook", "weight": 1.2 },
+          { "term": "タブレット", "weight": 1.0 },
+          { "term": "電卓", "weight": 1.0 },
+          { "term": "電子辞書", "weight": 1.0 },
+          { "term": "電子手帳", "weight": 1.0 },
+          { "term": "パソコンソフト", "weight": 1.0 },
+          { "term": "マウスパッド", "weight": 1.0 },
+          { "term": "Kindle", "weight": 1.0 },
+          { "term": "電子書籍リーダー", "weight": 1.0 },
+          { "term": "VRゴーグル", "weight": 1.0 },
+          { "term": "Apple Pencil", "weight": 1.2 },
+          { "term": "スタイラスペン", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "electronic_toys",
+        "medium_category_name_ja": "電子玩具",
+        "priority": 60,
+        "keywords": [
+          { "term": "ゲーム機", "weight": 1.0 },
+          { "term": "Nintendo Switch", "weight": 1.2 },
+          { "term": "PlayStation", "weight": 1.2 },
+          { "term": "PS5", "weight": 1.2 },
+          { "term": "PS4", "weight": 1.2 },
+          { "term": "Xbox", "weight": 1.2 },
+          { "term": "ゲームソフト", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "storage_media",
+        "medium_category_name_ja": "外部記録媒体",
+        "priority": 65,
+        "keywords": [
+          { "term": "FD", "weight": 1.0 },
+          { "term": "USBメモリー", "weight": 1.0 },
+          { "term": "USBメモリ", "weight": 1.0 },
+          { "term": "メモリーカード", "weight": 1.0 },
+          { "term": "SDカード", "weight": 1.0 },
+          { "term": "ビデオテープ", "weight": 1.0 },
+          { "term": "カセットテープ", "weight": 1.0 },
+          { "term": "DVD", "weight": 1.0 },
+          { "term": "CD", "weight": 1.0 },
+          { "term": "MD", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "electric_appliances",
+        "medium_category_name_ja": "電気製品",
+        "priority": 50,
+        "keywords": [
+          { "term": "防犯ブザー", "weight": 1.0 },
+          { "term": "ライト", "weight": 1.0 },
+          { "term": "電気かみそり", "weight": 1.0 },
+          { "term": "シェーバー", "weight": 1.0 },
+          { "term": "DVDプレーヤー", "weight": 1.0 },
+          { "term": "ドライヤー", "weight": 1.0 },
+          { "term": "電球", "weight": 1.0 },
+          { "term": "電子タバコ", "weight": 1.0 },
+          { "term": "加熱式たばこ", "weight": 1.0 },
+          { "term": "iQOS", "weight": 1.2 },
+          { "term": "glo", "weight": 1.2 },
+          { "term": "Ploom", "weight": 1.2 },
+          { "term": "ハンディファン", "weight": 1.0 },
+          { "term": "ネッククーラー", "weight": 1.0 },
+          { "term": "ヘアアイロン", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "electric_accessories",
+        "medium_category_name_ja": "電気製品類付属品",
+        "priority": 48,
+        "keywords": [
+          { "term": "充電器", "weight": 1.0 },
+          { "term": "モバイルバッテリー", "weight": 1.0 },
+          { "term": "電池", "weight": 1.0 },
+          { "term": "アダプター", "weight": 1.0 },
+          { "term": "コード", "weight": 1.0 },
+          { "term": "ケーブル", "weight": 1.0 },
+          { "term": "AirTag", "weight": 1.2 },
+          { "term": "Tile", "weight": 1.2 },
+          { "term": "紛失防止タグ", "weight": 1.0 },
+          { "term": "MagSafe", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "mobile_phones",
+    "large_category_name_ja": "携帯電話類",
+    "medium_categories": [
+      {
+        "medium_category_id": "mobile_phone",
+        "medium_category_name_ja": "携帯電話機",
+        "priority": 96,
+        "keywords": [
+          { "term": "携帯電話機", "weight": 1.0 },
+          { "term": "携帯電話", "weight": 1.0 },
+          { "term": "携帯", "weight": 1.0 },
+          { "term": "スマホ", "weight": 1.0 },
+          { "term": "スマートフォン", "weight": 1.0 },
+          { "term": "iPhone", "weight": 1.5 },
+          { "term": "Android", "weight": 1.2 },
+          { "term": "Galaxy", "weight": 1.2 },
+          { "term": "Xperia", "weight": 1.2 },
+          { "term": "AQUOS", "weight": 1.2 },
+          { "term": "ポケットベル", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "other_communication",
+        "medium_category_name_ja": "その他通信機器類",
+        "priority": 70,
+        "keywords": [
+          { "term": "位置情報携帯端末", "weight": 1.0 },
+          { "term": "GPS", "weight": 1.0 },
+          { "term": "ルーター", "weight": 1.0 },
+          { "term": "Wi-Fiルーター", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "jewelry",
+    "large_category_name_ja": "貴金属類",
+    "medium_categories": [
+      {
+        "medium_category_id": "necklace",
+        "medium_category_name_ja": "ネックレス",
+        "priority": 75,
+        "keywords": [
+          { "term": "ネックレス", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "ring",
+        "medium_category_name_ja": "指輪",
+        "priority": 75,
+        "keywords": [
+          { "term": "指輪", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "bracelet",
+        "medium_category_name_ja": "ブレスレット",
+        "priority": 75,
+        "keywords": [
+          { "term": "ブレスレット", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "earrings",
+        "medium_category_name_ja": "イヤリング類",
+        "priority": 75,
+        "keywords": [
+          { "term": "ピアス", "weight": 1.0 },
+          { "term": "イヤリング", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "brooch",
+        "medium_category_name_ja": "ブローチ",
+        "priority": 75,
+        "keywords": [
+          { "term": "ブローチ", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "pendant",
+        "medium_category_name_ja": "ペンダント",
+        "priority": 75,
+        "keywords": [
+          { "term": "ペンダント", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "other_jewelry",
+        "medium_category_name_ja": "その他貴金属類",
+        "priority": 74,
+        "keywords": [
+          { "term": "金地金", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "hobby_entertainment",
+    "large_category_name_ja": "趣味・娯楽用品類",
+    "medium_categories": [
+      {
+        "medium_category_id": "leisure_sports",
+        "medium_category_name_ja": "レジャー・スポーツ用品",
+        "priority": 40,
+        "keywords": [
+          { "term": "グローブ", "weight": 1.0 },
+          { "term": "ゴルフバッグ", "weight": 1.0 },
+          { "term": "ゴルフクラブ", "weight": 1.0 },
+          { "term": "テニスラケット", "weight": 1.0 },
+          { "term": "スケートボード", "weight": 1.0 },
+          { "term": "スケボー", "weight": 1.0 },
+          { "term": "浮き輪", "weight": 1.0 },
+          { "term": "釣り竿", "weight": 1.0 },
+          { "term": "釣り道具", "weight": 1.0 },
+          { "term": "クーラーボックス", "weight": 1.0 },
+          { "term": "電動キックボード", "weight": 1.0 },
+          { "term": "ヨガマット", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "musical_instruments",
+        "medium_category_name_ja": "楽器類",
+        "priority": 50,
+        "keywords": [
+          { "term": "ギター", "weight": 1.0 },
+          { "term": "笛", "weight": 1.0 },
+          { "term": "リコーダー", "weight": 1.0 },
+          { "term": "フルート", "weight": 1.0 },
+          { "term": "楽器", "weight": 0.5 }
+        ]
+      },
+      {
+        "medium_category_id": "other_hobby",
+        "medium_category_name_ja": "その他趣味・娯楽用品類",
+        "priority": 35,
+        "keywords": [
+          { "term": "おもちゃ", "weight": 1.0 },
+          { "term": "ぬいぐるみ", "weight": 1.0 },
+          { "term": "ゲームカード", "weight": 1.0 },
+          { "term": "トレーディングカード", "weight": 1.0 },
+          { "term": "トレカ", "weight": 1.0 },
+          { "term": "人形", "weight": 1.0 },
+          { "term": "フィギュア", "weight": 1.0 },
+          { "term": "トランプ", "weight": 1.0 },
+          { "term": "キックボード", "weight": 1.0 },
+          { "term": "アクリルスタンド", "weight": 1.0 },
+          { "term": "ペンライト", "weight": 1.0 },
+          { "term": "缶バッジ", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "certificates_cards",
+    "large_category_name_ja": "証明書類・カード類",
+    "medium_categories": [
+      {
+        "medium_category_id": "drivers_license",
+        "medium_category_name_ja": "運転免許証",
+        "priority": 100,
+        "keywords": [
+          { "term": "運転免許証", "weight": 1.5 },
+          { "term": "仮運転免許証", "weight": 1.2 },
+          { "term": "国際免許証", "weight": 1.2 },
+          { "term": "免許証", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "id_card",
+        "medium_category_name_ja": "身分証明書類",
+        "priority": 99,
+        "keywords": [
+          { "term": "学生証", "weight": 1.0 },
+          { "term": "生徒証", "weight": 1.0 },
+          { "term": "従業員証", "weight": 1.0 },
+          { "term": "会社員証", "weight": 1.0 },
+          { "term": "社員証", "weight": 1.0 },
+          { "term": "外国人登録証", "weight": 1.0 },
+          { "term": "パスポート", "weight": 1.5 },
+          { "term": "マイナンバーカード", "weight": 1.5 },
+          { "term": "身分証明書", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "health_insurance",
+        "medium_category_name_ja": "健康保険証類",
+        "priority": 98,
+        "keywords": [
+          { "term": "国民健康保険証", "weight": 1.0 },
+          { "term": "社会保険証", "weight": 1.0 },
+          { "term": "共済組合員証", "weight": 1.0 },
+          { "term": "老人医療証", "weight": 1.0 },
+          { "term": "乳児医療証", "weight": 1.0 },
+          { "term": "保険証", "weight": 0.8 },
+          { "term": "診察券", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "other_certificates",
+        "medium_category_name_ja": "その他証明書類",
+        "priority": 97,
+        "keywords": [
+          { "term": "身体障害者手帳", "weight": 1.0 },
+          { "term": "母子手帳", "weight": 1.0 },
+          { "term": "年金手帳", "weight": 1.0 },
+          { "term": "献血手帳", "weight": 1.0 },
+          { "term": "雇用保険被保険者証", "weight": 1.0 },
+          { "term": "印鑑登録証", "weight": 1.0 },
+          { "term": "印鑑登録証明書", "weight": 1.0 },
+          { "term": "住民票", "weight": 1.0 },
+          { "term": "住民基本台帳カード", "weight": 1.0 },
+          { "term": "自動車検査証", "weight": 1.0 },
+          { "term": "車検証", "weight": 1.0 },
+          { "term": "ナンバープレート", "weight": 1.0 },
+          { "term": "自賠責保険証", "weight": 1.0 },
+          { "term": "生命保険証", "weight": 1.0 },
+          { "term": "傷害保険証", "weight": 1.0 },
+          { "term": "船舶免許証", "weight": 1.0 },
+          { "term": "無線免許証", "weight": 1.0 },
+          { "term": "クレーン免許証", "weight": 1.0 },
+          { "term": "宅地建物取扱主任者証", "weight": 1.0 },
+          { "term": "通行証", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "bank_book",
+        "medium_category_name_ja": "預貯金通帳類",
+        "priority": 96,
+        "keywords": [
+          { "term": "預貯金通帳", "weight": 1.0 },
+          { "term": "預貯金証書", "weight": 1.0 },
+          { "term": "通帳", "weight": 0.8 }
+        ]
+      },
+      {
+        "medium_category_id": "cash_cards",
+        "medium_category_name_ja": "キャッシュカード類",
+        "priority": 101,
+        "keywords": [
+          { "term": "キャッシュカード", "weight": 1.5 },
+          { "term": "クレジットカード", "weight": 1.5 },
+          { "term": "クレカ", "weight": 1.5 },
+          { "term": "デビットカード", "weight": 1.5 },
+          { "term": "PiTaPaカード", "weight": 1.0 },
+          { "term": "カード", "weight": 0.2 }
+        ]
+      },
+      {
+        "medium_category_id": "membership_cards",
+        "medium_category_name_ja": "会員証(カード)類",
+        "priority": 60,
+        "keywords": [
+          { "term": "メンバーズカード", "weight": 1.0 },
+          { "term": "ポイントカード", "weight": 1.0 },
+          { "term": "図書館利用者カード", "weight": 1.0 },
+          { "term": "ビデオレンタルカード", "weight": 1.0 },
+          { "term": "振込カード", "weight": 1.0 },
+          { "term": "給油カード", "weight": 1.0 },
+          { "term": "受講カード", "weight": 1.0 },
+          { "term": "会員証", "weight": 0.8 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "securities",
+    "large_category_name_ja": "有価証券類",
+    "medium_categories": [
+      {
+        "medium_category_id": "marketable_securities",
+        "medium_category_name_ja": "有価証券",
+        "priority": 90,
+        "keywords": [
+          { "term": "商品券", "weight": 1.0 },
+          { "term": "図書券", "weight": 1.0 },
+          { "term": "図書カード", "weight": 1.0 },
+          { "term": "QUOカード", "weight": 1.0 },
+          { "term": "会員券", "weight": 1.0 },
+          { "term": "ギフト券", "weight": 1.0 },
+          { "term": "ビール券", "weight": 1.0 },
+          { "term": "小切手", "weight": 1.0 },
+          { "term": "株券", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "prepaid_cards",
+        "medium_category_name_ja": "プリペイドカード類",
+        "priority": 88,
+        "keywords": [
+          { "term": "テレホンカード", "weight": 1.0 },
+          { "term": "パスネット", "weight": 1.0 },
+          { "term": "バスカード", "weight": 1.0 },
+          { "term": "Suica", "weight": 1.0 },
+          { "term": "ICOCA", "weight": 1.0 },
+          { "term": "PASMO", "weight": 1.0 },
+          { "term": "TOICA", "weight": 1.0 },
+          { "term": "Kitaca", "weight": 1.0 },
+          { "term": "SUGOCA", "weight": 1.0 },
+          { "term": "nimoca", "weight": 1.0 },
+          { "term": "はやかけん", "weight": 1.0 },
+          { "term": "manaca", "weight": 1.0 },
+          { "term": "交通系ICカード", "weight": 1.0 },
+          { "term": "オレンジカード", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "commuter_pass",
+        "medium_category_name_ja": "定期券類",
+        "priority": 92,
+        "keywords": [
+          { "term": "定期券", "weight": 1.0 },
+          { "term": "Suica定期", "weight": 1.0 },
+          { "term": "ICOCA定期", "weight": 1.0 },
+          { "term": "PASMO定期", "weight": 1.0 },
+          { "term": "シルバーパス", "weight": 1.0 },
+          { "term": "身体障害者無料乗車証", "weight": 1.0 },
+          { "term": "株主優待乗車証", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "tickets",
+        "medium_category_name_ja": "乗車券類",
+        "priority": 85,
+        "keywords": [
+          { "term": "回数券", "weight": 1.0 },
+          { "term": "乗車券", "weight": 1.0 },
+          { "term": "航空券", "weight": 1.0 },
+          { "term": "チケット", "weight": 0.5 }
+        ]
+      },
+      {
+        "medium_category_id": "betting_tickets_lottery",
+        "medium_category_name_ja": "馬券・宝くじ類",
+        "priority": 80,
+        "keywords": [
+          { "term": "宝くじ", "weight": 1.0 },
+          { "term": "馬券", "weight": 1.0 },
+          { "term": "車券", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "stamps",
+        "medium_category_name_ja": "切手類",
+        "priority": 70,
+        "keywords": [
+          { "term": "郵便切手", "weight": 1.0 },
+          { "term": "収入印紙", "weight": 1.0 },
+          { "term": "未使用郵便はがき", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "other_securities",
+        "medium_category_name_ja": "その他証券類",
+        "priority": 60,
+        "keywords": [
+          { "term": "損傷紙幣", "weight": 1.0 },
+          { "term": "外国通貨", "weight": 1.0 },
+          { "term": "古銭", "weight": 1.0 },
+          { "term": "旧通貨", "weight": 1.0 },
+          { "term": "入場券", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "publications",
+    "large_category_name_ja": "著作品類",
+    "medium_categories": [
+      {
+        "medium_category_id": "books",
+        "medium_category_name_ja": "書籍類",
+        "priority": 30,
+        "keywords": [
+          { "term": "文庫本", "weight": 1.0 },
+          { "term": "雑誌", "weight": 1.0 },
+          { "term": "単行本", "weight": 1.0 },
+          { "term": "時刻表", "weight": 1.0 },
+          { "term": "マンガ本", "weight": 1.0 },
+          { "term": "漫画", "weight": 1.0 },
+          { "term": "コミック", "weight": 1.0 },
+          { "term": "教科書", "weight": 1.0 },
+          { "term": "冊子", "weight": 1.0 },
+          { "term": "地図", "weight": 1.0 },
+          { "term": "本", "weight": 0.5 }
+        ]
+      },
+      {
+        "medium_category_id": "media",
+        "medium_category_name_ja": "ディスク・テープ類",
+        "priority": 35,
+        "keywords": [
+          { "term": "ビデオソフト", "weight": 1.0 },
+          { "term": "CDソフト", "weight": 1.0 },
+          { "term": "MDソフト", "weight": 1.0 },
+          { "term": "DVDソフト", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "photos_art",
+        "medium_category_name_ja": "写真類",
+        "priority": 25,
+        "keywords": [
+          { "term": "写真", "weight": 1.0 },
+          { "term": "ネガ", "weight": 1.0 },
+          { "term": "写真パネル", "weight": 1.0 },
+          { "term": "絵画", "weight": 1.0 },
+          { "term": "版画", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "stationery",
+    "large_category_name_ja": "手帳・文具類",
+    "medium_categories": [
+      {
+        "medium_category_id": "notebooks",
+        "medium_category_name_ja": "手帳・ノート類",
+        "priority": 45,
+        "keywords": [
+          { "term": "手帳", "weight": 1.0 },
+          { "term": "アドレス帳", "weight": 1.0 },
+          { "term": "ノート", "weight": 1.0 },
+          { "term": "システム手帳", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "stamps_seals",
+        "medium_category_name_ja": "印鑑類",
+        "priority": 80,
+        "keywords": [
+          { "term": "印鑑", "weight": 1.0 },
+          { "term": "ハンコ", "weight": 1.0 },
+          { "term": "朱肉", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "organizers",
+        "medium_category_name_ja": "整理収納用品類",
+        "priority": 30,
+        "keywords": [
+          { "term": "ビニールケース", "weight": 1.0 },
+          { "term": "クリアーファイル", "weight": 1.0 },
+          { "term": "クリアファイル", "weight": 1.0 },
+          { "term": "書類入れ", "weight": 1.0 },
+          { "term": "バインダー", "weight": 1.0 },
+          { "term": "アルバム", "weight": 1.0 },
+          { "term": "クリアーケース", "weight": 1.0 },
+          { "term": "プラスチックケース", "weight": 1.0 },
+          { "term": "手提げ金庫", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "writing_utensils",
+        "medium_category_name_ja": "筆箱・筆記用具類",
+        "priority": 40,
+        "keywords": [
+          { "term": "ボールペン", "weight": 1.0 },
+          { "term": "筆入れ", "weight": 1.0 },
+          { "term": "ペンケース", "weight": 1.0 },
+          { "term": "ペン", "weight": 0.5 },
+          { "term": "鉛筆", "weight": 0.5 },
+          { "term": "シャープペンシル", "weight": 0.5 },
+          { "term": "シャーペン", "weight": 0.5 },
+          { "term": "万年筆", "weight": 0.5 }
+        ]
+      },
+      {
+        "medium_category_id": "other_stationery",
+        "medium_category_name_ja": "その他文具類",
+        "priority": 20,
+        "keywords": [
+          { "term": "カッターナイフ", "weight": 1.0 },
+          { "term": "カッター", "weight": 1.0 },
+          { "term": "定規", "weight": 1.0 },
+          { "term": "ハサミ", "weight": 1.0 },
+          { "term": "はさみ", "weight": 1.0 },
+          { "term": "文具", "weight": 0.2 },
+          { "term": "文房具", "weight": 0.2 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "documents_papers",
+    "large_category_name_ja": "書類・紙類",
+    "medium_categories": [
+      {
+        "medium_category_id": "documents",
+        "medium_category_name_ja": "書類",
+        "priority": 60,
+        "keywords": [
+          { "term": "領収書", "weight": 1.0 },
+          { "term": "明細書", "weight": 1.0 },
+          { "term": "契約書", "weight": 1.0 },
+          { "term": "履歴書", "weight": 1.0 },
+          { "term": "受領書", "weight": 1.0 },
+          { "term": "保証書", "weight": 1.0 },
+          { "term": "注文書", "weight": 1.0 },
+          { "term": "資料", "weight": 1.0 },
+          { "term": "賞状", "weight": 1.0 },
+          { "term": "書類", "weight": 0.5 }
+        ]
+      },
+      {
+        "medium_category_id": "drawings",
+        "medium_category_name_ja": "図画類",
+        "priority": 25,
+        "keywords": [
+          { "term": "建築図面", "weight": 1.0 },
+          { "term": "電気図面", "weight": 1.0 },
+          { "term": "カレンダー", "weight": 1.0 },
+          { "term": "パンフレット", "weight": 1.0 },
+          { "term": "カタログ", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "business_cards",
+        "medium_category_name_ja": "名刺",
+        "priority": 55,
+        "keywords": [
+          { "term": "名刺", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "other_papers",
+        "medium_category_name_ja": "その他紙類",
+        "priority": 15,
+        "keywords": [
+          { "term": "レシート", "weight": 1.0 },
+          { "term": "割引券", "weight": 1.0 },
+          { "term": "使用済郵便はがき", "weight": 1.0 },
+          { "term": "振込用紙", "weight": 1.0 },
+          { "term": "手紙", "weight": 1.0 },
+          { "term": "駐車券", "weight": 1.0 },
+          { "term": "食券", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "parcels_boxes",
+    "large_category_name_ja": "小包・箱類",
+    "medium_categories": [
+      {
+        "medium_category_id": "parcels_boxes",
+        "medium_category_name_ja": "小包・箱類",
+        "priority": 20,
+        "keywords": [
+          { "term": "ダンボール箱", "weight": 1.0 },
+          { "term": "箱", "weight": 1.0 },
+          { "term": "菓子箱", "weight": 1.0 },
+          { "term": "宅配物", "weight": 1.0 },
+          { "term": "郵便小包", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "clothing_footwear",
+    "large_category_name_ja": "衣類・履物類",
+    "medium_categories": [
+      {
+        "medium_category_id": "hats",
+        "medium_category_name_ja": "帽子類",
+        "priority": 40,
+        "keywords": [
+          { "term": "ヘルメット", "weight": 1.0 },
+          { "term": "サンバイザー", "weight": 1.0 },
+          { "term": "野球帽", "weight": 1.0 },
+          { "term": "キャップ", "weight": 1.0 },
+          { "term": "ニット帽", "weight": 1.0 },
+          { "term": "ハット", "weight": 1.0 },
+          { "term": "耳あて", "weight": 1.0 },
+          { "term": "帽子", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "gloves",
+        "medium_category_name_ja": "手袋",
+        "priority": 40,
+        "keywords": [
+          { "term": "手袋", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "scarves_shawls",
+        "medium_category_name_ja": "マフラー類",
+        "priority": 40,
+        "keywords": [
+          { "term": "マフラー", "weight": 1.0 },
+          { "term": "スカーフ", "weight": 1.0 },
+          { "term": "ショール", "weight": 1.0 },
+          { "term": "ストール", "weight": 1.0 },
+          { "term": "ひざ掛け", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "tops",
+        "medium_category_name_ja": "上着類",
+        "priority": 35,
+        "keywords": [
+          { "term": "ジャンパー", "weight": 1.0 },
+          { "term": "ジャケット", "weight": 1.0 },
+          { "term": "カーディガン", "weight": 1.0 },
+          { "term": "Tシャツ", "weight": 1.0 },
+          { "term": "ワイシャツ", "weight": 1.0 },
+          { "term": "ブラウス", "weight": 1.0 },
+          { "term": "セーター", "weight": 1.0 },
+          { "term": "トレーナー", "weight": 1.0 },
+          { "term": "ベスト", "weight": 1.0 },
+          { "term": "コート", "weight": 1.0 },
+          { "term": "パーカー", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "bottoms",
+        "medium_category_name_ja": "ズボン類",
+        "priority": 35,
+        "keywords": [
+          { "term": "ズボン", "weight": 1.0 },
+          { "term": "パンツ", "weight": 1.0 },
+          { "term": "ジーパン", "weight": 1.0 },
+          { "term": "ジーンズ", "weight": 1.0 },
+          { "term": "スカート", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "sets",
+        "medium_category_name_ja": "上下衣類",
+        "priority": 38,
+        "keywords": [
+          { "term": "スーツ", "weight": 1.0 },
+          { "term": "ワンピース", "weight": 1.0 },
+          { "term": "作業着", "weight": 1.0 },
+          { "term": "制服", "weight": 1.0 },
+          { "term": "白衣", "weight": 1.0 },
+          { "term": "柔道着", "weight": 1.0 },
+          { "term": "ウインドブレーカー", "weight": 1.0 },
+          { "term": "スポーツウェア", "weight": 1.0 },
+          { "term": "ジャージ", "weight": 1.0 },
+          { "term": "合羽", "weight": 1.0 },
+          { "term": "レインコート", "weight": 1.0 },
+          { "term": "着物", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "other_clothing",
+        "medium_category_name_ja": "その他衣類",
+        "priority": 30,
+        "keywords": [
+          { "term": "下着類", "weight": 1.0 },
+          { "term": "水着", "weight": 1.0 },
+          { "term": "ネクタイ", "weight": 1.0 },
+          { "term": "エプロン", "weight": 1.0 },
+          { "term": "バンダナ", "weight": 1.0 },
+          { "term": "パジャマ", "weight": 1.0 },
+          { "term": "靴下", "weight": 1.0 },
+          { "term": "ソックス", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "clothing_accessories",
+        "medium_category_name_ja": "衣類付属品",
+        "priority": 32,
+        "keywords": [
+          { "term": "ベルト", "weight": 1.0 },
+          { "term": "バックル", "weight": 1.0 },
+          { "term": "ネクタイピン", "weight": 1.0 },
+          { "term": "カフスボタン", "weight": 1.0 },
+          { "term": "ボタン", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "footwear",
+        "medium_category_name_ja": "履物類",
+        "priority": 35,
+        "keywords": [
+          { "term": "上履き", "weight": 1.0 },
+          { "term": "ランニングシューズ", "weight": 1.0 },
+          { "term": "スニーカー", "weight": 1.0 },
+          { "term": "革靴", "weight": 1.0 },
+          { "term": "ブーツ", "weight": 1.0 },
+          { "term": "長靴", "weight": 1.0 },
+          { "term": "サンダル", "weight": 1.0 },
+          { "term": "スリッパ", "weight": 1.0 },
+          { "term": "靴", "weight": 0.5 },
+          { "term": "シューズ", "weight": 0.5 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "umbrellas",
+    "large_category_name_ja": "かさ類",
+    "medium_categories": [
+      {
+        "medium_category_id": "umbrella",
+        "medium_category_name_ja": "かさ",
+        "priority": 30,
+        "keywords": [
+          { "term": "長傘", "weight": 1.0 },
+          { "term": "折りたたみ傘", "weight": 1.0 },
+          { "term": "ビニール傘", "weight": 1.0 },
+          { "term": "傘", "weight": 0.8 },
+          { "term": "カサ", "weight": 0.8 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "keys",
+    "large_category_name_ja": "鍵類",
+    "medium_categories": [
+      {
+        "medium_category_id": "key_simple",
+        "medium_category_name_ja": "鍵",
+        "priority": 90,
+        "keywords": [
+          { "term": "自動車用鍵", "weight": 1.0 },
+          { "term": "自転車用鍵", "weight": 1.0 },
+          { "term": "家用鍵", "weight": 1.0 },
+          { "term": "スマートキー", "weight": 1.2 },
+          { "term": "鍵", "weight": 0.5 },
+          { "term": "カギ", "weight": 0.5 }
+        ]
+      },
+      {
+        "medium_category_id": "key_with_holder",
+        "medium_category_name_ja": "鍵(キーホルダー付)",
+        "priority": 91,
+        "keywords": []
+      },
+      {
+        "medium_category_id": "key_with_case",
+        "medium_category_name_ja": "鍵(キーケース付)",
+        "priority": 92,
+        "keywords": []
+      },
+      {
+        "medium_category_id": "card_key",
+        "medium_category_name_ja": "カードキー",
+        "priority": 93,
+        "keywords": [
+          { "term": "セキュリティカード", "weight": 1.0 },
+          { "term": "ICカード", "weight": 1.0 },
+          { "term": "入室カード", "weight": 1.0 },
+          { "term": "カードキー", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "daily_necessities",
+    "large_category_name_ja": "生活用品類",
+    "medium_categories": [
+      {
+        "medium_category_id": "necessities",
+        "medium_category_name_ja": "生活用品",
+        "priority": 25,
+        "keywords": [
+          { "term": "タオル", "weight": 1.0 },
+          { "term": "ハンカチ", "weight": 1.0 },
+          { "term": "ライター", "weight": 1.0 },
+          { "term": "灰皿", "weight": 1.0 },
+          { "term": "キーホルダー", "weight": 1.0 },
+          { "term": "ストラップ", "weight": 1.0 },
+          { "term": "ティッシュペーパー", "weight": 1.0 },
+          { "term": "ティッシュ", "weight": 1.0 },
+          { "term": "くし", "weight": 1.0 },
+          { "term": "ブラシ", "weight": 1.0 },
+          { "term": "洗面具", "weight": 1.0 },
+          { "term": "鏡", "weight": 1.0 },
+          { "term": "ミラー", "weight": 1.0 },
+          { "term": "石鹸", "weight": 1.0 },
+          { "term": "紙おむつ", "weight": 1.0 },
+          { "term": "扇子", "weight": 1.0 },
+          { "term": "風呂敷", "weight": 1.0 },
+          { "term": "クッション", "weight": 1.0 },
+          { "term": "枕", "weight": 1.0 },
+          { "term": "ハサミ", "weight": 1.0 },
+          { "term": "タンブラー", "weight": 1.0 },
+          { "term": "マイボトル", "weight": 1.0 },
+          { "term": "日傘", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "tableware",
+        "medium_category_name_ja": "食器類",
+        "priority": 28,
+        "keywords": [
+          { "term": "水筒", "weight": 1.0 },
+          { "term": "弁当箱", "weight": 1.0 },
+          { "term": "包丁", "weight": 1.0 },
+          { "term": "食品保存容器", "weight": 1.0 },
+          { "term": "タッパー", "weight": 1.0 },
+          { "term": "皿", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "tools",
+        "medium_category_name_ja": "工具類",
+        "priority": 20,
+        "keywords": [
+          { "term": "ドライバー", "weight": 1.0 },
+          { "term": "ペンチ", "weight": 1.0 },
+          { "term": "レンチ", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "ornaments",
+        "medium_category_name_ja": "装飾品類",
+        "priority": 30,
+        "keywords": [
+          { "term": "名札", "weight": 1.0 },
+          { "term": "腕章", "weight": 1.0 },
+          { "term": "バッチ", "weight": 1.0 },
+          { "term": "ヘアピン", "weight": 1.0 },
+          { "term": "かんざし", "weight": 1.0 },
+          { "term": "コサージュ", "weight": 1.0 },
+          { "term": "リストバンド", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "religious_goods",
+        "medium_category_name_ja": "神仏具品類",
+        "priority": 15,
+        "keywords": [
+          { "term": "お守り", "weight": 1.0 },
+          { "term": "数珠", "weight": 1.0 },
+          { "term": "おみくじ", "weight": 1.0 },
+          { "term": "お骨", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "bicycles",
+        "medium_category_name_ja": "自転車類",
+        "priority": 55,
+        "keywords": [
+          { "term": "自転車", "weight": 1.0 },
+          { "term": "キャリアカート", "weight": 1.0 },
+          { "term": "ベビーカー", "weight": 1.0 },
+          { "term": "台車", "weight": 1.0 },
+          { "term": "タイヤ", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "cases_covers",
+        "medium_category_name_ja": "ケース・カバー類",
+        "priority": 45,
+        "keywords": [
+          { "term": "めがねケース", "weight": 1.0 },
+          { "term": "キーケース", "weight": 1.0 },
+          { "term": "ペットボトルケース", "weight": 1.0 },
+          { "term": "ティッシュケース", "weight": 1.0 },
+          { "term": "傘カバー", "weight": 1.0 },
+          { "term": "スマホケース", "weight": 1.0 },
+          { "term": "iPhoneケース", "weight": 1.0 },
+          { "term": "AirPodsケース", "weight": 1.0 },
+          { "term": "PCケース", "weight": 1.0 },
+          { "term": "タブレットケース", "weight": 1.0 },
+          { "term": "マスクケース", "weight": 1.0 },
+          { "term": "ケース", "weight": 0.2 },
+          { "term": "カバー", "weight": 0.2 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "medical_cosmetics",
+    "large_category_name_ja": "医療・化粧品類",
+    "medium_categories": [
+      {
+        "medium_category_id": "medicines",
+        "medium_category_name_ja": "薬類",
+        "priority": 50,
+        "keywords": [
+          { "term": "絆創膏", "weight": 1.0 },
+          { "term": "コンタクト洗浄液", "weight": 1.0 },
+          { "term": "薬", "weight": 1.0 },
+          { "term": "錠剤", "weight": 1.0 },
+          { "term": "救急箱", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "medical_supplies",
+        "medium_category_name_ja": "医療関連品類",
+        "priority": 55,
+        "keywords": [
+          { "term": "杖", "weight": 1.0 },
+          { "term": "万歩計", "weight": 1.0 },
+          { "term": "入れ歯", "weight": 1.0 },
+          { "term": "補聴器", "weight": 1.0 },
+          { "term": "マスク", "weight": 1.0 },
+          { "term": "ピルケース", "weight": 1.0 },
+          { "term": "体温計", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "cosmetics",
+        "medium_category_name_ja": "化粧品類",
+        "priority": 40,
+        "keywords": [
+          { "term": "口紅", "weight": 1.0 },
+          { "term": "リップ", "weight": 1.0 },
+          { "term": "香水", "weight": 1.0 },
+          { "term": "コンパクト", "weight": 1.0 },
+          { "term": "ファンデーション", "weight": 1.0 },
+          { "term": "アイシャドウ", "weight": 1.0 },
+          { "term": "化粧品", "weight": 1.0 },
+          { "term": "日焼け止め", "weight": 1.0 },
+          { "term": "ハンドクリーム", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "foodstuffs",
+    "large_category_name_ja": "食料品類",
+    "medium_categories": [
+      {
+        "medium_category_id": "foodstuffs",
+        "medium_category_name_ja": "食料品類",
+        "priority": 10,
+        "keywords": [
+          { "term": "食品", "weight": 1.0 },
+          { "term": "飲料品", "weight": 1.0 },
+          { "term": "飲み物", "weight": 1.0 },
+          { "term": "ペットボトル", "weight": 1.0 },
+          { "term": "酒", "weight": 1.0 },
+          { "term": "たばこ", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "animals_plants",
+    "large_category_name_ja": "動植物類",
+    "medium_categories": [
+      {
+        "medium_category_id": "animals",
+        "medium_category_name_ja": "動物",
+        "priority": 5,
+        "keywords": []
+      },
+      {
+        "medium_category_id": "plants",
+        "medium_category_name_ja": "植物",
+        "priority": 5,
+        "keywords": [
+          { "term": "花束", "weight": 1.0 },
+          { "term": "鉢植え", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "animal_plant_related",
+        "medium_category_name_ja": "動植物関連品",
+        "priority": 4,
+        "keywords": [
+          { "term": "虫かご", "weight": 1.0 },
+          { "term": "鳥かご", "weight": 1.0 },
+          { "term": "ペットフード", "weight": 1.0 },
+          { "term": "肥料", "weight": 1.0 }
+        ]
+      }
+    ]
+  },
+  {
+    "large_category_id": "others",
+    "large_category_name_ja": "その他",
+    "medium_categories": [
+      {
+        "medium_category_id": "prohibited_items",
+        "medium_category_name_ja": "所持禁止物品",
+        "priority": 200,
+        "keywords": [
+          { "term": "けん銃", "weight": 1.0 },
+          { "term": "刀", "weight": 1.0 },
+          { "term": "覚せい剤", "weight": 1.0 }
+        ]
+      },
+      {
+        "medium_category_id": "other_items",
+        "medium_category_name_ja": "その他",
+        "priority": 1,
+        "keywords": [
+          { "term": "土器", "weight": 1.0 },
+          { "term": "石器", "weight": 1.0 },
+          { "term": "金庫", "weight": 1.0 },
+          { "term": "消火器", "weight": 1.0 },
+          { "term": "薬品", "weight": 1.0 },
+          { "term": "看板", "weight": 1.0 }
+        ]
+      }
+    ]
+  }
+]

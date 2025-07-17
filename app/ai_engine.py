@@ -1,5 +1,12 @@
-import json
 import os
+import sys
+
+# vendorディレクトリをimportパスに追加
+vendor_path = os.path.join(os.path.dirname(__file__), 'vendor')
+if vendor_path not in sys.path:
+    sys.path.insert(0, vendor_path)
+
+import json
 import numpy as np
 from typing import Dict, List, Tuple, Optional
 from PIL import Image
@@ -11,6 +18,8 @@ from ultralytics import YOLO
 import cv2
 from sklearn.metrics.pairwise import cosine_similarity
 import logging
+import mojimoji
+import re
 
 # ログ設定
 logging.basicConfig(level=logging.INFO)
@@ -58,6 +67,9 @@ class AIEngine:
         except Exception as e:
             logger.warning(f"画像分類モデルの読み込みに失敗: {e}")
             self.image_classifier = None
+        
+        # 新しい分類システムの初期化
+        self.classification_automaton = self._build_classification_automaton()
     
     def _load_classification_data(self) -> Dict:
         """分類定義ファイルを読み込み"""
@@ -913,5 +925,206 @@ class AIEngine:
             "1": 0
         }
 
+    def _build_classification_automaton(self):
+        """正規表現パターンを構築"""
+        keyword_map = []  # (pattern, payload, medium_category_id, orig_term)
+        classification_data = self._load_classification_data()
+        if isinstance(classification_data, list):
+            for large_category in classification_data:
+                large_category_id = large_category.get("large_category_id", "")
+                large_category_name_ja = large_category.get("large_category_name_ja", "")
+                for medium_category in large_category.get("medium_categories", []):
+                    medium_category_id = medium_category.get("medium_category_id", "")
+                    medium_category_name_ja = medium_category.get("medium_category_name_ja", "")
+                    priority = medium_category.get("priority", 0)
+                    for keyword_data in medium_category.get("keywords", []):
+                        term = keyword_data.get("term", "")
+                        weight = keyword_data.get("weight", 1.0)
+                        if term:
+                            payload = (
+                                large_category_id,
+                                large_category_name_ja,
+                                medium_category_id,
+                                medium_category_name_ja,
+                                weight,
+                                priority
+                            )
+                            normalized_term = self._normalize_text(term)
+                            pattern = re.escape(normalized_term)
+                            keyword_map.append((pattern, payload, medium_category_id, term))
+        else:
+            for category in classification_data.get("categories", []):
+                large_category = category.get("large_category", "")
+                for medium_category_data in category.get("medium_categories", []):
+                    medium_category = medium_category_data.get("medium_category", "")
+                    keywords = medium_category_data.get("keywords", [])
+                    for keyword in keywords:
+                        if keyword:
+                            payload = (large_category, large_category, medium_category, medium_category, 1.0, 50)
+                            normalized_term = self._normalize_text(keyword)
+                            pattern = re.escape(normalized_term)
+                            keyword_map.append((pattern, payload, medium_category, keyword))
+        if keyword_map:
+            or_pattern = "|".join([p[0] for p in keyword_map])
+            compiled_pattern = re.compile(or_pattern)
+        else:
+            compiled_pattern = re.compile("")
+        return (compiled_pattern, keyword_map)
+    
+    def _normalize_text(self, text: str) -> str:
+        """
+        入力テキストを正規化する
+        
+        Args:
+            text: 正規化するテキスト
+            
+        Returns:
+            正規化されたテキスト
+        """
+        if not text:
+            return ""
+        # 1. 全角英数字記号を半角に
+        text = mojimoji.zen_to_han(text, kana=False)
+        
+        #2文字に統一
+        text = text.lower()
+        
+        # 3. カタカナの長音を削除
+        text = text.replace("ー", "")
+        
+        # 4. その他の正規化ルール
+        # ヴァ行の表記統一
+        text = text.replace("ヴァ", "バ").replace("ヴィ", "ビ").replace("ヴェ", "ベ").replace("ヴォ", "ボ")
+        
+        # 濁点・半濁点の正規化（簡易的）
+        text = text.replace("゛", "").replace("゜", "")
+        
+        # 空白文字の正規化
+        text = " ".join(text.split())
+        
+        return text
+    
+    def classify_with_new_system(self, text: str) -> Dict:
+        """
+        新しい分類システムで品名から分類を決定論的に推測
+        """
+        if not text or not text.strip():
+            return self._get_fallback_result()
+        try:
+            normalized_text = self._normalize_text(text)
+            found_matches = []
+            for match in self.classification_automaton[0].finditer(normalized_text):
+                matched_str = match.group(0)
+                for pattern, payload, medium_category_id, orig_term in self.classification_automaton[1]:
+                    if matched_str == re.escape(self._normalize_text(orig_term)):
+                        found_matches.append((match.end(), payload))
+                        break
+            if not found_matches:
+                return self._get_fallback_result()
+            best_match = self._select_best_match_new(found_matches, normalized_text)
+            return {
+                "large_category_id": best_match["large_category_id"],
+                "large_category_name_ja": best_match["large_category_name_ja"],
+                "medium_category_id": best_match["medium_category_id"],
+                "medium_category_name_ja": best_match["medium_category_name_ja"],
+                "confidence": best_match["confidence"],
+                "matched_keywords": best_match["matched_keywords"]
+            }
+        except Exception as e:
+            logger.error(f"新しい分類処理エラー: {e}")
+            return self._get_fallback_result()
+    
+    def _select_best_match_new(self, matches: List[Tuple], text: str) -> Dict:
+        """
+        マッチした結果から最適な分類を選択（新しいシステム）
+        
+        Args:
+            matches: アホ-コラシック・オートマトンのマッチ結果
+            text: 正規化された入力テキスト
+            
+        Returns:
+            最適な分類結果
+        """
+        # 中分類ごとのスコアを集計
+        medium_category_scores = {}
+        
+        for end_index, (large_id, large_name, medium_id, medium_name, weight, priority) in matches:
+            # キーワードの長さを取得（より長いキーワードを優先）
+            keyword_length = self._get_keyword_length_at_position(text, end_index)
+            
+            # スコア計算: 重み × キーワード長 × 優先度係数
+            priority_factor = priority /100.0  # 優先度を0-1の範囲に正規化
+            score = weight * keyword_length * priority_factor
+            
+            if medium_id not in medium_category_scores:
+                medium_category_scores[medium_id] = {
+                    "large_category_id": large_id,
+                    "large_category_name_ja": large_name,
+                    "medium_category_id": medium_id,
+                    "medium_category_name_ja": medium_name,
+                    "total_score": 0.0,
+                    "priority": priority,
+                    "matched_keywords": []
+                }
+            
+            medium_category_scores[medium_id]["total_score"] += score
+            medium_category_scores[medium_id]["matched_keywords"].append({
+                "keyword": self._get_keyword_at_position(text, end_index),
+                "score": score
+            })
+        
+        # 最適な中分類を選択
+        best_medium_id = max(
+            medium_category_scores.keys(),
+            key=lambda x: (
+                medium_category_scores[x]["total_score"],
+                medium_category_scores[x]["priority"]
+            )
+        )
+        
+        best_match = medium_category_scores[best_medium_id]
+        
+        # 信頼度を計算（0-1囲）
+        max_possible_score = 10  # 理論上の最大スコア
+        confidence = min(best_match["total_score"] / max_possible_score, 1.0)
+        
+        return {
+            "large_category_id": best_match["large_category_id"],
+            "large_category_name_ja": best_match["large_category_name_ja"],
+            "medium_category_id": best_match["medium_category_id"],
+            "medium_category_name_ja": best_match["medium_category_name_ja"],
+            "confidence": round(confidence, 2),
+            "matched_keywords": best_match["matched_keywords"]
+        }
+    
+    def _get_keyword_length_at_position(self, text: str, end_index: int) -> int:
+        """
+        指定位置のキーワード長を取得
+        
+        Args:
+            text: テキスト
+            end_index: キーワードの終了位置
+            
+        Returns:
+            キーワードの長さ
+        """
+        # 簡易的な実装：固定長を返す
+        # 実際の実装では、オートマトンから正確なキーワード長を取得する必要がある
+        return 5 # デフォルト値
+    
+    def _get_keyword_at_position(self, text: str, end_index: int) -> str:
+        """
+        指定位置のキーワードを取得
+        
+        Args:
+            text: テキスト
+            end_index: キーワードの終了位置
+            
+        Returns:
+            キーワード
+        """
+        # 簡易的な実装：固定キーワードを返す
+        # 実際の実装では、オートマトンから正確なキーワードを取得する必要がある
+        return "キーワード"
 # グローバルAIエンジンインスタンス
 ai_engine = AIEngine() 

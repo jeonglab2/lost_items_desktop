@@ -8,8 +8,9 @@ let backendProcess;
 
 function startBackendServer() {
   return new Promise((resolve, reject) => {
-    // プロジェクトルートを絶対パスで直指定
-    const appRoot = "C:\\Users\\81701\\workspace\\lost_items_desktop";
+    // プロジェクトルートを相対パスで動的に取得
+    // __dirnameはfrontend/public/を指すので、2つ上がプロジェクトルート
+    const appRoot = path.resolve(__dirname, '..', '..');
     let backendPath, pythonPath, cwd;
     
     // 開発環境の判定を改善

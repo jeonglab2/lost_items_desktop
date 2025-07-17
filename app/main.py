@@ -1,3 +1,11 @@
+import os
+import sys
+
+# vendorディレクトリをimportパスに追加
+vendor_path = os.path.join(os.path.dirname(__file__), 'vendor')
+if vendor_path not in sys.path:
+    sys.path.insert(0, vendor_path)
+
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, Query, Request
 from sqlalchemy.orm import Session
 from typing import List, Dict
@@ -7,17 +15,15 @@ from app.models import Item, Facility
 from app.ai_engine import ai_engine
 from app.security import security_manager
 from app.logging_config import logging_config
-from sqlalchemy import and_
+import mojimoji
 import bcrypt
 import math
 import tempfile
-import os
 import time
 from fastapi.middleware.cors import CORSMiddleware
 import uuid
 from fastapi.staticfiles import StaticFiles
 from datetime import timezone, timedelta, datetime
-import sys
 
 # Electronアプリ内でのパス設定
 if getattr(sys, 'frozen', False):
@@ -418,8 +424,8 @@ def suggest_category(request: Dict[str, str]):
                 "confidence": "0.0"
             }
         
-        # AIエンジンを使用して分類を提案
-        result = ai_engine.suggest_category_by_name(item_name)
+        # 新しい分類システムを優先的に使用
+        result = classify_with_new_system(item_name)
         
         return {
             "category_large": result.get("large_category", "その他"),

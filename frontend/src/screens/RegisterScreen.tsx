@@ -174,10 +174,12 @@ const RegisterScreen: React.FC = () => {
     }
   }, [selectedFile]);
 
-  const categories = classifications.categories;
-  const largeCategoryOptions = categories.map((cat: any) => cat.large_category);
+  const categories = Array.isArray(classifications.categories) ? classifications.categories : [];
+  const largeCategoryOptions = Array.isArray(categories) ? categories.map((cat: any) => cat.large_category) : [];
   const mediumCategoryOptions =
-    categories.find((cat: any) => cat.large_category === formData.category_large)?.medium_categories.map((m: any) => m.medium_category) || [];
+    Array.isArray(categories)
+      ? (categories.find((cat: any) => cat.large_category === formData.category_large)?.medium_categories || []).map((m: any) => m.medium_category)
+      : [];
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

@@ -88,6 +88,10 @@
       {
         "from": "./build",
         "to": "build"
+      },
+      {
+        "from": "../venv/Lib/site-packages",
+        "to": "app/vendor"
       }
     ],
     "win": {
