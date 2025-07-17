@@ -8,6 +8,7 @@ __pycache__/
 # Electron/Reactビルド成果物
 frontend/dist/
 frontend/build/
+venv/
 *.exe
 *.asar
 *.dll
