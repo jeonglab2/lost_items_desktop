@@ -424,8 +424,8 @@ def suggest_category(request: Dict[str, str]):
                 "confidence": "0.0"
             }
         
-        # 新しい分類システムを優先的に使用
-        result = classify_with_new_system(item_name)
+        # AIエンジンを使用して分類提案
+        result = ai_engine.suggest_category_by_name(item_name)
         
         return {
             "category_large": result.get("large_category", "その他"),

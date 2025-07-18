@@ -68,34 +68,38 @@ class AIEngine:
             logger.warning(f"画像分類モデルの読み込みに失敗: {e}")
             self.image_classifier = None
         
-        # 新しい分類システムの初期化
-        self.classification_automaton = self._build_classification_automaton()
+        # 分類オートマトンの構築（エラーハンドリング付き）
+        try:
+            self.classification_automaton = self._build_classification_automaton()
+            logger.info(f"分類オートマトン構築完了: {len(self.classification_automaton[1])}個のキーワード")
+        except Exception as e:
+            logger.error(f"分類オートマトン初期化エラー: {e}")
+            # エラーが発生した場合は空のオートマトンを設定
+            self.classification_automaton = (re.compile(""), [])
     
     def _load_classification_data(self) -> Dict:
         """分類定義ファイルを読み込み"""
         try:
-            # 複数のパスを試行
-            possible_paths = [
-                'docs/eac_05_item_classification.json',
-                '../docs/eac_05_item_classification.json',
-                'frontend/public/item_classification.json',
-                '../frontend/public/item_classification.json'
-            ]
-            
-            for classification_file in possible_paths:
-                if os.path.exists(classification_file):
-                    with open(classification_file, 'r', encoding='utf-8') as f:
-                        logger.info(f"分類定義ファイルを読み込みました: {classification_file}")
-                        return json.load(f)
-            
-            logger.warning(f"分類定義ファイルが見つかりません。試行したパス: {possible_paths}")
-            return {"categories": []}
-        except FileNotFoundError:
-            logger.error("分類定義ファイルが見つかりません")
-            return {"categories": []}
-        except json.JSONDecodeError as e:
-            logger.error(f"分類定義ファイルのJSON解析エラー: {e}")
-            return {"categories": []}
+            # 1. 開発用パス
+            dev_path = os.path.join(os.path.dirname(__file__), '../frontend/public/item_classification.json')
+            # 2. 配布用パス（resources/app/ など）
+            packaged_path = os.path.join(os.path.dirname(__file__), 'item_classification.json')
+            # 3. カレントディレクトリ直下
+            cwd_path = os.path.join(os.getcwd(), 'item_classification.json')
+
+            for path in [dev_path, packaged_path, cwd_path]:
+                if os.path.exists(path):
+                    with open(path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        logger.info(f"分類定義ファイルを読み込みました: {path}")
+                        return data
+
+            logger.warning("分類定義ファイルが見つかりません: " +
+                           f"{dev_path}, {packaged_path}, {cwd_path}")
+            return []
+        except Exception as e:
+            logger.error(f"分類データ読み込みエラー: {e}")
+            return []
     
     def recognize_item(self, image_path: str) -> Dict:
         """
@@ -486,13 +490,13 @@ class AIEngine:
             if object_classification["score"] > 0.0:
                 return object_classification
         
-        # キーワードマッチング
-        for category in self.classification_data.get("categories", []):
-            large_category = category["large_category"]
+        # キーワードマッチング（新しい分類データ構造に対応）
+        for category in self.classification_data:
+            large_category = category["large_category_name_ja"]
             
             for medium_category_data in category["medium_categories"]:
-                medium_category = medium_category_data["medium_category"]
-                keywords = medium_category_data["keywords"]
+                medium_category = medium_category_data["medium_category_name_ja"]
+                keywords = [kw["term"] for kw in medium_category_data["keywords"]]
                 
                 # キーワードマッチングスコアを計算
                 score = self._calculate_keyword_score(features, keywords)
@@ -731,8 +735,10 @@ class AIEngine:
     def _get_fallback_result(self) -> Dict:
         """フォールバック結果を返す"""
         return {
-            "category_large": "その他",
-            "category_medium": "その他", 
+            "large_category_id": "others",
+            "large_category_name_ja": "その他",
+            "medium_category_id": "items",
+            "medium_category_name_ja": "その他",
             "name": "不明",
             "features": "認識できませんでした",
             "color": "不明",
@@ -826,22 +832,21 @@ class AIEngine:
         """
         try:
             if not item_name or not item_name.strip():
+                logger.debug("空の品名が入力されました")
                 return self._get_fallback_result()
             
-            # 品名を詳細に分析して特徴を抽出
-            features = self._extract_features_from_name(item_name)
+            logger.debug(f"品名からの分類提案開始: {item_name}")
             
-            # 分類提案
-            classification_result = self._classify_item(features, [])
+            # 新しい分類システムを使用
+            result = self.classify_with_new_system(item_name)
             
-            # 信頼度計算
-            confidence = self._calculate_confidence(classification_result, features, [])
+            logger.debug(f"分類結果: {result}")
             
             return {
-                "large_category": classification_result.get("large_category", "その他"),
-                "medium_category": classification_result.get("medium_category", "その他"),
+                "large_category": result.get("large_category_name_ja", "その他"),
+                "medium_category": result.get("medium_category_name_ja", "その他"),
                 "name": item_name,  # 入力された品名をそのまま返す
-                "confidence": confidence
+                "confidence": result.get("confidence", 0.0)
             }
             
         except Exception as e:
@@ -929,41 +934,58 @@ class AIEngine:
         """正規表現パターンを構築"""
         keyword_map = []  # (pattern, payload, medium_category_id, orig_term)
         classification_data = self._load_classification_data()
-        if isinstance(classification_data, list):
-            for large_category in classification_data:
-                large_category_id = large_category.get("large_category_id", "")
-                large_category_name_ja = large_category.get("large_category_name_ja", "")
-                for medium_category in large_category.get("medium_categories", []):
-                    medium_category_id = medium_category.get("medium_category_id", "")
-                    medium_category_name_ja = medium_category.get("medium_category_name_ja", "")
-                    priority = medium_category.get("priority", 0)
-                    for keyword_data in medium_category.get("keywords", []):
-                        term = keyword_data.get("term", "")
-                        weight = keyword_data.get("weight", 1.0)
-                        if term:
-                            payload = (
-                                large_category_id,
-                                large_category_name_ja,
-                                medium_category_id,
-                                medium_category_name_ja,
-                                weight,
-                                priority
-                            )
-                            normalized_term = self._normalize_text(term)
-                            pattern = re.escape(normalized_term)
-                            keyword_map.append((pattern, payload, medium_category_id, term))
-        else:
-            for category in classification_data.get("categories", []):
-                large_category = category.get("large_category", "")
-                for medium_category_data in category.get("medium_categories", []):
-                    medium_category = medium_category_data.get("medium_category", "")
-                    keywords = medium_category_data.get("keywords", [])
-                    for keyword in keywords:
-                        if keyword:
-                            payload = (large_category, large_category, medium_category, medium_category, 1.0, 50)
-                            normalized_term = self._normalize_text(keyword)
-                            pattern = re.escape(normalized_term)
-                            keyword_map.append((pattern, payload, medium_category, keyword))
+        
+        try:
+            if isinstance(classification_data, list):
+                # 新しい形式の分類データ（配列形式）
+                for large_category in classification_data:
+                    large_category_id = large_category.get("large_category_id", "")
+                    large_category_name_ja = large_category.get("large_category_name_ja", "")
+                    for medium_category in large_category.get("medium_categories", []):
+                        medium_category_id = medium_category.get("medium_category_id", "")
+                        medium_category_name_ja = medium_category.get("medium_category_name_ja", "")
+                        priority = medium_category.get("priority", 0)
+                        for keyword_data in medium_category.get("keywords", []):
+                            # キーワードデータが辞書形式か文字列形式かを判定
+                            if isinstance(keyword_data, dict):
+                                term = keyword_data.get("term", "")
+                                weight = keyword_data.get("weight", 1.0)
+                            elif isinstance(keyword_data, str):
+                                term = keyword_data
+                                weight = 1.0
+                            else:
+                                continue
+                            
+                            if term:
+                                payload = (
+                                    large_category_id,
+                                    large_category_name_ja,
+                                    medium_category_id,
+                                    medium_category_name_ja,
+                                    weight,
+                                    priority
+                                )
+                                normalized_term = self._normalize_text(term)
+                                pattern = re.escape(normalized_term)
+                                keyword_map.append((pattern, payload, medium_category_id, term))
+            else:
+                # 古い形式の分類データ（辞書形式）
+                for category in classification_data.get("categories", []):
+                    large_category = category.get("large_category", "")
+                    for medium_category_data in category.get("medium_categories", []):
+                        medium_category = medium_category_data.get("medium_category", "")
+                        keywords = medium_category_data.get("keywords", [])
+                        for keyword in keywords:
+                            if isinstance(keyword, str) and keyword:
+                                payload = (large_category, large_category, medium_category, medium_category, 1.0, 50)
+                                normalized_term = self._normalize_text(keyword)
+                                pattern = re.escape(normalized_term)
+                                keyword_map.append((pattern, payload, medium_category, keyword))
+        except Exception as e:
+            logger.error(f"分類オートマトン構築エラー: {e}")
+            # エラーが発生した場合は空のオートマトンを返す
+            return (re.compile(""), [])
+        
         if keyword_map:
             or_pattern = "|".join([p[0] for p in keyword_map])
             compiled_pattern = re.compile(or_pattern)
@@ -1013,14 +1035,25 @@ class AIEngine:
         try:
             normalized_text = self._normalize_text(text)
             found_matches = []
-            for match in self.classification_automaton[0].finditer(normalized_text):
-                matched_str = match.group(0)
-                for pattern, payload, medium_category_id, orig_term in self.classification_automaton[1]:
-                    if matched_str == re.escape(self._normalize_text(orig_term)):
-                        found_matches.append((match.end(), payload))
-                        break
-            if not found_matches:
+            
+            # 分類オートマトンが正しく構築されているかチェック
+            if not self.classification_automaton or not self.classification_automaton[1]:
+                logger.warning("分類オートマトンが正しく構築されていません")
                 return self._get_fallback_result()
+            
+            # キーワードマッチング
+            for pattern, payload, medium_category_id, orig_term in self.classification_automaton[1]:
+                normalized_term = self._normalize_text(orig_term)
+                if normalized_term in normalized_text:
+                    # マッチした位置を計算
+                    start_pos = normalized_text.find(normalized_term)
+                    end_pos = start_pos + len(normalized_term)
+                    found_matches.append((end_pos, payload, orig_term))
+            
+            if not found_matches:
+                logger.debug(f"キーワードマッチが見つかりません: {text}")
+                return self._get_fallback_result()
+            
             best_match = self._select_best_match_new(found_matches, normalized_text)
             return {
                 "large_category_id": best_match["large_category_id"],
@@ -1039,7 +1072,7 @@ class AIEngine:
         マッチした結果から最適な分類を選択（新しいシステム）
         
         Args:
-            matches: アホ-コラシック・オートマトンのマッチ結果
+            matches: マッチ結果 (end_pos, payload, orig_term)
             text: 正規化された入力テキスト
             
         Returns:
@@ -1048,12 +1081,12 @@ class AIEngine:
         # 中分類ごとのスコアを集計
         medium_category_scores = {}
         
-        for end_index, (large_id, large_name, medium_id, medium_name, weight, priority) in matches:
+        for end_index, (large_id, large_name, medium_id, medium_name, weight, priority), orig_term in matches:
             # キーワードの長さを取得（より長いキーワードを優先）
-            keyword_length = self._get_keyword_length_at_position(text, end_index)
+            keyword_length = len(orig_term)
             
             # スコア計算: 重み × キーワード長 × 優先度係数
-            priority_factor = priority /100.0  # 優先度を0-1の範囲に正規化
+            priority_factor = priority / 100.0  # 優先度を0-1の範囲に正規化
             score = weight * keyword_length * priority_factor
             
             if medium_id not in medium_category_scores:
@@ -1069,9 +1102,12 @@ class AIEngine:
             
             medium_category_scores[medium_id]["total_score"] += score
             medium_category_scores[medium_id]["matched_keywords"].append({
-                "keyword": self._get_keyword_at_position(text, end_index),
+                "keyword": orig_term,
                 "score": score
             })
+        
+        if not medium_category_scores:
+            return self._get_fallback_result()
         
         # 最適な中分類を選択
         best_medium_id = max(
@@ -1084,7 +1120,7 @@ class AIEngine:
         
         best_match = medium_category_scores[best_medium_id]
         
-        # 信頼度を計算（0-1囲）
+        # 信頼度を計算（0-1の範囲）
         max_possible_score = 10  # 理論上の最大スコア
         confidence = min(best_match["total_score"] / max_possible_score, 1.0)
         
@@ -1108,9 +1144,14 @@ class AIEngine:
         Returns:
             キーワードの長さ
         """
-        # 簡易的な実装：固定長を返す
-        # 実際の実装では、オートマトンから正確なキーワード長を取得する必要がある
-        return 5 # デフォルト値
+        # マッチしたキーワードの長さを計算
+        # 正規化されたテキストから元のキーワード長を推定
+        if end_index <= 0:
+            return 1
+        
+        # 簡易的な実装：マッチした部分の長さを返す
+        # より正確な実装では、オートマトンから正確なキーワード長を取得する
+        return min(end_index, len(text))
     
     def _get_keyword_at_position(self, text: str, end_index: int) -> str:
         """
@@ -1123,8 +1164,12 @@ class AIEngine:
         Returns:
             キーワード
         """
-        # 簡易的な実装：固定キーワードを返す
-        # 実際の実装では、オートマトンから正確なキーワードを取得する必要がある
-        return "キーワード"
+        # マッチしたキーワードを取得
+        if end_index <= 0:
+            return ""
+        
+        # 簡易的な実装：マッチした部分を返す
+        # より正確な実装では、オートマトンから正確なキーワードを取得する
+        return text[:end_index] if end_index <= len(text) else text
 # グローバルAIエンジンインスタンス
 ai_engine = AIEngine() 

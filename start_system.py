@@ -83,7 +83,7 @@ class SystemStarter:
     
     def download_ai_models(self):
         """AIモデルのダウンロード"""
-        print("🤖 AIモデルをダウンロードしています...")
+        print("AIモデルをダウンロードしています...")
         
         try:
             # YOLOモデルのダウンロード
@@ -104,10 +104,12 @@ class SystemStarter:
         print("バックエンドサーバーを起動しています...")
         
         try:
+            # ルートディレクトリから起動（appディレクトリがルートにあるため）
+            root_dir = Path(".").absolute()
             process = subprocess.Popen([
                 sys.executable, "-m", "uvicorn", "app.main:app",
                 "--host", "0.0.0.0", "--port", "8000", "--reload"
-            ])
+            ], cwd=root_dir)
             self.processes.append(("Backend", process))
             print("バックエンドサーバー起動完了 (http://localhost:8000)")
             
@@ -119,24 +121,60 @@ class SystemStarter:
         print("フロントエンドサーバーを起動しています...")
         
         try:
-            # フロントエンドディレクトリに移動
-            os.chdir("frontend")
+            # フロントエンドディレクトリのパスを取得
+            frontend_dir = Path("frontend").absolute()
+            
+            # ディレクトリが存在するか確認
+            if not frontend_dir.exists():
+                print(f"フロントエンドディレクトリが見つかりません: {frontend_dir}")
+                return
+            
+            # package.jsonが存在するか確認
+            if not (frontend_dir / "package.json").exists():
+                print(f"package.jsonが見つかりません: {frontend_dir / 'package.json'}")
+                return
+            
+            # npmコマンドのパスを確認
+            npm_path = None
+            try:
+                # まずnpmコマンドを直接試行
+                result = subprocess.run(["npm", "--version"], capture_output=True, text=True)
+                if result.returncode == 0:
+                    npm_path = "npm"
+                    print(f"npm version: {result.stdout.strip()}")
+            except FileNotFoundError:
+                # npmが見つからない場合、Node.jsのインストールパスを探す
+                possible_npm_paths = [
+                    r"C:\Program Files\nodejs\npm.cmd",
+                    r"C:\Program Files (x86)\nodejs\npm.cmd",
+                    os.path.expanduser(r"~\AppData\Roaming\npm\npm.cmd"),
+                    os.path.expanduser(r"~\AppData\Local\Programs\nodejs\npm.cmd")
+                ]
+                
+                for path in possible_npm_paths:
+                    if os.path.exists(path):
+                        npm_path = path
+                        print(f"npm found at: {npm_path}")
+                        break
+                
+                if not npm_path:
+                    print("npmが見つかりません。Node.jsがインストールされているか確認してください。")
+                    return
             
             # 依存関係インストール（初回のみ）
-            if not Path("node_modules").exists():
+            if not (frontend_dir / "node_modules").exists():
                 print("フロントエンド依存関係をインストールしています...")
-                subprocess.run(["npm", "install"], check=True)
+                subprocess.run([npm_path, "install"], cwd=frontend_dir, check=True)
             
             # 開発サーバー起動
-            process = subprocess.Popen(["npm", "start"])
+            process = subprocess.Popen([npm_path, "start"], cwd=frontend_dir)
             self.processes.append(("Frontend", process))
             print("フロントエンドサーバー起動完了 (http://localhost:3000)")
             
-            # 元のディレクトリに戻る
-            os.chdir("..")
-            
         except Exception as e:
             print(f"フロントエンド起動失敗: {e}")
+            import traceback
+            traceback.print_exc()
     
     def monitor_processes(self):
         """プロセス監視"""
@@ -148,19 +186,28 @@ class SystemStarter:
     
     def signal_handler(self, signum, frame):
         """シグナルハンドラー"""
-        print("\n🛑 システムを停止しています...")
+        print("\nシステムを停止しています...")
         self.running = False
         
         for name, process in self.processes:
             print(f"停止中: {name}")
-            process.terminate()
             try:
-                process.wait(timeout=10)
+                process.terminate()
+                process.wait(timeout=5)
             except subprocess.TimeoutExpired:
-                process.kill()
+                try:
+                    process.kill()
+                except:
+                    pass
+            except Exception as e:
+                print(f"{name}停止エラー: {e}")
         
         print("システム停止完了")
-        sys.exit(0)
+        # 非同期処理のキャンセルエラーを無視して終了
+        try:
+            sys.exit(0)
+        except:
+            os._exit(0)
     
     def start_system(self):
         """システム全体を起動"""

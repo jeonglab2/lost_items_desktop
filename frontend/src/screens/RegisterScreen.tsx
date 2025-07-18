@@ -131,7 +131,7 @@ const RegisterScreen: React.FC = () => {
   const [creditCardCount, setCreditCardCount] = useState('');
 
   // 分類データの状態
-  const [classifications, setClassifications] = useState<any>({ categories: [] });
+  const [classifications, setClassifications] = useState<any>([]);
   const [suggestedCategory, setSuggestedCategory] = useState<any>(null);
   const [isSuggesting, setIsSuggesting] = useState(false);
 
@@ -142,7 +142,7 @@ const RegisterScreen: React.FC = () => {
       .catch(error => {
         console.error('分類データの読み込みに失敗しました:', error);
         // エラー時のフォールバック処理
-        setClassifications({ categories: [] });
+        setClassifications([]);
       });
   }, []);
 
@@ -174,11 +174,11 @@ const RegisterScreen: React.FC = () => {
     }
   }, [selectedFile]);
 
-  const categories = Array.isArray(classifications.categories) ? classifications.categories : [];
-  const largeCategoryOptions = Array.isArray(categories) ? categories.map((cat: any) => cat.large_category) : [];
+  const categories = Array.isArray(classifications) ? classifications : [];
+  const largeCategoryOptions = Array.isArray(categories) ? categories.map((cat: any) => cat.large_category_name_ja) : [];
   const mediumCategoryOptions =
     Array.isArray(categories)
-      ? (categories.find((cat: any) => cat.large_category === formData.category_large)?.medium_categories || []).map((m: any) => m.medium_category)
+      ? (categories.find((cat: any) => cat.large_category_name_ja === formData.category_large)?.medium_categories || []).map((m: any) => m.medium_category_name_ja)
       : [];
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {

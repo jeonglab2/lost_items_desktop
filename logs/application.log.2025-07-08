@@ -1,0 +1,39 @@
+2025-07-08 10:32:04,271 | api | INFO | API request: {'method': 'GET', 'path': '/', 'status_code': 200, 'duration': '0.002s', 'user_id': 'anonymous'}
+2025-07-08 10:32:04,273 | api | INFO | API request: {'method': 'GET', 'path': '/', 'status_code': 200, 'duration': '0.000s', 'user_id': 'anonymous'}
+2025-07-08 10:32:06,384 | api | INFO | API request: {'method': 'OPTIONS', 'path': '/auth/token', 'status_code': 200, 'duration': '0.000s', 'user_id': 'anonymous'}
+2025-07-08 11:20:31,472 | api | INFO | API request: {'method': 'GET', 'path': '/', 'status_code': 200, 'duration': '0.001s', 'user_id': 'anonymous'}
+2025-07-08 11:20:31,474 | api | INFO | API request: {'method': 'GET', 'path': '/', 'status_code': 200, 'duration': '0.001s', 'user_id': 'anonymous'}
+2025-07-08 11:20:33,721 | api | INFO | API request: {'method': 'OPTIONS', 'path': '/auth/token', 'status_code': 200, 'duration': '0.000s', 'user_id': 'anonymous'}
+2025-07-08 11:20:33,928 | security | WARNING | Security event: {'event_type': 'auth_success', 'details': {'facility_code': 'FACILITY-01'}, 'user_id': 'FACILITY-01'}
+2025-07-08 11:20:33,929 | api | INFO | API request: {'method': 'POST', 'path': '/auth/token', 'status_code': 200, 'duration': '0.207s', 'user_id': 'anonymous'}
+2025-07-08 11:21:08,248 | app.ai_engine | WARNING | OCRエラー: module 'PIL.Image' has no attribute 'ANTIALIAS'
+2025-07-08 11:21:08,256 | ai | INFO | AI operation: {'operation': 'image_recognition', 'duration': '3.081s', 'success': True, 'details': {'file_size': 29227, 'mime_type': 'image/jpeg'}}
+2025-07-08 11:21:08,257 | performance | WARNING | Performance alert: {'metric': 'api_response_time', 'value': 3.1002678871154785, 'threshold': 2.0, 'exceeded': True}
+2025-07-08 11:21:08,257 | api | INFO | API request: {'method': 'POST', 'path': '/recognize', 'status_code': 200, 'duration': '3.100s', 'user_id': 'anonymous'}
+2025-07-08 11:22:03,463 | api | INFO | API request: {'method': 'OPTIONS', 'path': '/items', 'status_code': 200, 'duration': '0.000s', 'user_id': 'anonymous'}
+2025-07-08 11:22:03,511 | api | INFO | API request: {'method': 'POST', 'path': '/items', 'status_code': 200, 'duration': '0.046s', 'user_id': 'anonymous'}
+2025-07-08 11:22:03,520 | api | INFO | API request: {'method': 'POST', 'path': '/items/e6e1e05c-b5ab-4c29-89b0-84c81bde8a1c/image', 'status_code': 200, 'duration': '0.006s', 'user_id': 'anonymous'}
+2025-07-08 11:22:05,726 | api | INFO | API request: {'method': 'GET', 'path': '/items', 'status_code': 200, 'duration': '0.003s', 'user_id': 'anonymous'}
+2025-07-08 11:22:05,728 | api | INFO | API request: {'method': 'GET', 'path': '/items', 'status_code': 200, 'duration': '0.001s', 'user_id': 'anonymous'}
+2025-07-08 11:22:06,078 | api | INFO | API request: {'method': 'GET', 'path': '/static/images/e6e1e05c-b5ab-4c29-89b0-84c81bde8a1c_c339f49fe363408d9da2e741f38d0234.jpg', 'status_code': 200, 'duration': '0.023s', 'user_id': 'anonymous'}
+2025-07-08 11:22:06,080 | api | INFO | API request: {'method': 'GET', 'path': '/static/images/e6e1e05c-b5ab-4c29-89b0-84c81bde8a1c_c339f49fe363408d9da2e741f38d0234.jpg', 'status_code': 200, 'duration': '0.002s', 'user_id': 'anonymous'}
+2025-07-08 11:22:09,724 | api | INFO | API request: {'method': 'GET', 'path': '/items', 'status_code': 200, 'duration': '0.003s', 'user_id': 'anonymous'}
+2025-07-08 11:22:09,726 | api | INFO | API request: {'method': 'GET', 'path': '/items', 'status_code': 200, 'duration': '0.001s', 'user_id': 'anonymous'}
+2025-07-08 11:22:17,238 | security | WARNING | Security event: {'event_type': 'auth_success', 'details': {'facility_code': 'FACILITY-01'}, 'user_id': 'FACILITY-01'}
+2025-07-08 11:22:17,240 | api | INFO | API request: {'method': 'POST', 'path': '/auth/token', 'status_code': 200, 'duration': '0.179s', 'user_id': 'anonymous'}
+2025-07-08 11:23:47,729 | api | INFO | API request: {'method': 'POST', 'path': '/items', 'status_code': 200, 'duration': '0.020s', 'user_id': 'anonymous'}
+2025-07-08 11:23:49,651 | api | INFO | API request: {'method': 'GET', 'path': '/items', 'status_code': 200, 'duration': '0.003s', 'user_id': 'anonymous'}
+2025-07-08 11:23:49,654 | api | INFO | API request: {'method': 'GET', 'path': '/items', 'status_code': 200, 'duration': '0.002s', 'user_id': 'anonymous'}
+2025-07-08 11:23:49,966 | api | INFO | API request: {'method': 'GET', 'path': '/static/images/e6e1e05c-b5ab-4c29-89b0-84c81bde8a1c_c339f49fe363408d9da2e741f38d0234.jpg', 'status_code': 200, 'duration': '0.000s', 'user_id': 'anonymous'}
+2025-07-08 11:23:49,969 | api | INFO | API request: {'method': 'GET', 'path': '/static/images/e6e1e05c-b5ab-4c29-89b0-84c81bde8a1c_c339f49fe363408d9da2e741f38d0234.jpg', 'status_code': 200, 'duration': '0.001s', 'user_id': 'anonymous'}
+2025-07-08 11:23:50,475 | api | INFO | API request: {'method': 'GET', 'path': '/static/images/e6e1e05c-b5ab-4c29-89b0-84c81bde8a1c_c339f49fe363408d9da2e741f38d0234.jpg', 'status_code': 200, 'duration': '0.001s', 'user_id': 'anonymous'}
+2025-07-08 11:24:29,205 | api | INFO | API request: {'method': 'GET', 'path': '/static/images/e6e1e05c-b5ab-4c29-89b0-84c81bde8a1c_c339f49fe363408d9da2e741f38d0234.jpg', 'status_code': 200, 'duration': '0.003s', 'user_id': 'anonymous'}
+2025-07-08 11:24:29,211 | api | INFO | API request: {'method': 'POST', 'path': '/items/2eb9a4ca-11f8-4291-913e-5ae6e9096418/image', 'status_code': 200, 'duration': '0.009s', 'user_id': 'anonymous'}
+2025-07-08 11:24:30,623 | api | INFO | API request: {'method': 'GET', 'path': '/items', 'status_code': 200, 'duration': '0.003s', 'user_id': 'anonymous'}
+2025-07-08 11:24:30,627 | api | INFO | API request: {'method': 'GET', 'path': '/static/images/2eb9a4ca-11f8-4291-913e-5ae6e9096418_26cd7f8d92d84c83b70ae36e9d7f08eb.png', 'status_code': 200, 'duration': '0.001s', 'user_id': 'anonymous'}
+2025-07-08 11:24:30,627 | api | INFO | API request: {'method': 'GET', 'path': '/static/images/e6e1e05c-b5ab-4c29-89b0-84c81bde8a1c_c339f49fe363408d9da2e741f38d0234.jpg', 'status_code': 200, 'duration': '0.000s', 'user_id': 'anonymous'}
+2025-07-08 11:24:38,675 | app.ai_engine | WARNING | 色分析エラー: cannot reshape array of size 40000 into shape (3)
+2025-07-08 11:24:38,677 | ai | INFO | AI operation: {'operation': 'image_recognition', 'duration': '0.643s', 'success': True, 'details': {'file_size': 538614, 'mime_type': 'image/png'}}
+2025-07-08 11:24:38,678 | api | INFO | API request: {'method': 'POST', 'path': '/recognize', 'status_code': 200, 'duration': '0.654s', 'user_id': 'anonymous'}
+2025-07-08 11:24:59,175 | api | INFO | API request: {'method': 'POST', 'path': '/items', 'status_code': 200, 'duration': '0.036s', 'user_id': 'anonymous'}
+2025-07-08 11:24:59,188 | api | INFO | API request: {'method': 'POST', 'path': '/items/b1fdcb8d-95e0-430a-9e6e-b089d5a99c1d/image', 'status_code': 200, 'duration': '0.010s', 'user_id': 'anonymous'}

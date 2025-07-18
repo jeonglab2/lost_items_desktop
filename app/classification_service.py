@@ -23,19 +23,13 @@ class ClassificationService:
 
     def _load_classification_data(self) -> List[Dict]:
         """分類定義ファイルを読み込み"""
-        possible_paths = [
-            "frontend/public/item_classification.json",
-            "../frontend/public/item_classification.json",
-            "docs/eac_05_item_classification.json",
-            "../docs/eac_05_item_classification.json"
-        ]
-        for classification_file in possible_paths:
-            if os.path.exists(classification_file):
-                with open(classification_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    logger.info(f"分類定義ファイルを読み込みました: {classification_file}")
-                    return data
-        logger.warning(f"分類定義ファイルが見つかりません。試行したパス: {possible_paths}")
+        classification_file = "frontend/public/item_classification.json"
+        if os.path.exists(classification_file):
+            with open(classification_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                logger.info(f"分類定義ファイルを読み込みました: {classification_file}")
+                return data
+        logger.warning(f"分類定義ファイルが見つかりません: {classification_file}")
         return []
 
     def _build_keyword_patterns(self):
