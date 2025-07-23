@@ -20,6 +20,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import logging
 import mojimoji
 import re
+from app.classification_service import SemanticClassifier
 
 # ログ設定
 logging.basicConfig(level=logging.INFO)
@@ -30,6 +31,7 @@ class AIEngine:
         """AIエンジンの初期化"""
         self.classification_data = self._load_classification_data()
         self.sentence_model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
+        self.semantic_classifier = SemanticClassifier('data/category_vectors.npz')
         
         # EasyOCRの初期化（PIL.Image.ANTIALIASエラー回避）
         try:
@@ -821,34 +823,31 @@ class AIEngine:
             return []
 
     def suggest_category_by_name(self, item_name: str) -> Dict:
-        """
-        品名から分類を提案
-        
-        Args:
-            item_name: 品名
-            
-        Returns:
-            分類提案結果の辞書
-        """
         try:
             if not item_name or not item_name.strip():
                 logger.debug("空の品名が入力されました")
                 return self._get_fallback_result()
             
             logger.debug(f"品名からの分類提案開始: {item_name}")
-            
-            # 新しい分類システムを使用
-            result = self.classify_with_new_system(item_name)
-            
-            logger.debug(f"分類結果: {result}")
-            
-            return {
-                "large_category": result.get("large_category_name_ja", "その他"),
-                "medium_category": result.get("medium_category_name_ja", "その他"),
-                "name": item_name,  # 入力された品名をそのまま返す
-                "confidence": result.get("confidence", 0.0)
-            }
-            
+
+            # SemanticClassifierで推測
+            suggestions = self.semantic_classifier.suggest_categories(item_name, top_n=1)
+            if suggestions:
+                best_term, score = suggestions[0]
+                # best_term から大分類・中分類をitem_classification.jsonから逆引きする処理を追加
+                # 例: self.classification_data から該当termを検索し、large_category_name_ja, medium_category_name_jaを取得
+                for large in self.classification_data:
+                    for medium in large.get("medium_categories", []):
+                        for keyword in medium.get("keywords", []):
+                            if keyword.get("term") == best_term:
+                                return {
+                                    "large_category": large["large_category_name_ja"],
+                                    "medium_category": medium["medium_category_name_ja"],
+                                    "name": item_name,
+                                    "confidence": score
+                                }
+            # fallback
+            return self._get_fallback_result()
         except Exception as e:
             logger.error(f"品名からの分類提案エラー: {e}")
             return self._get_fallback_result()

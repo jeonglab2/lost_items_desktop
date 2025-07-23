@@ -64,7 +64,8 @@
       "public/preload.js",
       "node_modules/**/*",
       "app/**",
-      "public/item_classification.json"
+      "public/item_classification.json",
+      "data/category_vectors.npz"
     ],
     "extraResources": [
       {
@@ -98,6 +99,10 @@
       {
         "from": "public/item_classification.json",
         "to": "app/item_classification.json"
+      },
+      {
+        "from": "../data/category_vectors.npz",
+        "to": "data/category_vectors.npz"
       }
     ],
     "win": {

@@ -710,7 +710,17 @@ ${errorMessage}
             
             <h2 className="text-2xl font-bold text-gray-800 mb-6">新規拾得物登録</h2>
             
-            <form onSubmit={handleSubmit} className="space-y-6" style={{ position: 'relative', zIndex: 20 }}>
+            <form
+              onSubmit={handleSubmit}
+              onKeyDown={e => {
+                // Enterキーで送信されないようにする
+                if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+                  e.preventDefault();
+                }
+              }}
+              className="space-y-6"
+              style={{ position: 'relative', zIndex: 20 }}
+            >
               {/* 画像アップロードセクション */}
               <div className="bg-gray-50 p-6 rounded-lg">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">画像アップロード（任意）</h3>

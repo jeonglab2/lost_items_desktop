@@ -1,11 +1,39 @@
-import json
+import sys
 import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import json
 import logging
 from typing import Dict, List, Tuple, Optional
 import mojimoji
 import re
+import unicodedata
+from sudachipy import Dictionary, SplitMode
+import torch
+from transformers import AutoTokenizer, AutoModel
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+from text_utils import normalize_text, get_bert_embedding
 
 logger = logging.getLogger(__name__)
+
+# BERTモデルの初期化（グローバルで1回のみ）
+MODEL_NAME = 'cl-tohoku/bert-base-japanese-whole-word-masking'
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model = AutoModel.from_pretrained(MODEL_NAME)
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model.to(device)
+
+# SudachiPyの辞書オブジェクトを初期化（core辞書を使用）
+tokenizer_obj = Dictionary(dict="core").create()
+
+def extract_nouns(text: str) -> list:
+    """
+    SudachiPyを使用してテキストから名詞の原形を抽出する。
+    """
+    morphemes = tokenizer_obj.tokenize(text, SplitMode.C)
+    nouns = [m.dictionary_form() for m in morphemes if m.part_of_speech()[0] == '名詞']
+    return nouns
 
 class ClassificationService:
     """
@@ -56,7 +84,7 @@ class ClassificationService:
                             priority,
                             term
                         )
-                        normalized_term = self._normalize_text(term)
+                        normalized_term = normalize_text(term)
                         # 正規表現パターンをエスケープして登録
                         pattern = re.escape(normalized_term)
                         keyword_map.append((pattern, payload, medium_category_id, term))
@@ -68,38 +96,20 @@ class ClassificationService:
         else:
             compiled_pattern = re.compile("")
         return (compiled_pattern, keyword_map), term_map
-
-    def _normalize_text(self, text: str) -> str:
-        """テキストを正規化する"""
-        if not text:
-            return ""
-        # 1. 全角英数字記号を半角に
-        text = mojimoji.zen_to_han(text, kana=False)
-        # 2. 小文字に統一
-        text = text.lower()
-        # 3. カタカナの長音を削除
-        text = text.replace('ー', '')
-        # 4. ヴァ行の表記統一
-        text = text.replace('ヴァ', 'バ').replace('ヴィ', 'ビ').replace('ヴェ', 'ベ').replace('ヴォ', 'ボ')
-        # 5. 濁点・半濁点の正規化（簡易的）
-        # ここでは省略（必要なら追加）
-        # 6. 空白文字の正規化
-        text = ''.join(text.split())
-        return text
-
+    
     def classify(self, text: str) -> Dict:
         """品名から分類を決定論的に推測"""
         if not text or not text.strip():
             return self._get_fallback_result()
         try:
-            normalized_text = self._normalize_text(text)
+            normalized_text = normalize_text(text)
             found_matches = []
             # 正規表現で全キーワードを一括検索
             for match in self.keyword_patterns[0].finditer(normalized_text):
                 matched_str = match.group(0)
                 # payloadを特定
                 for pattern, payload, medium_category_id, orig_term in self.keyword_patterns[1]:
-                    if matched_str == re.escape(self._normalize_text(orig_term)):
+                    if matched_str == re.escape(normalize_text(orig_term)):
                         found_matches.append((match.end(), payload))
                         break
             if not found_matches:
@@ -167,6 +177,29 @@ class ClassificationService:
     def get_all_categories(self) -> List[Dict]:
         """全分類情報を取得（フロントエンド用）"""
         return self.classification_data
+    
+class SemanticClassifier:
+    def __init__(self, precomputed_vectors_path: str):
+        """分類器を初期化し、事前計算済みベクトルをロードする。"""
+        try:
+            data = np.load(precomputed_vectors_path)
+            self.categories = data['categories']
+            self.category_vectors = data['vectors']
+        except FileNotFoundError:
+            print(f"Error: Pre-computed vectors file not found at {precomputed_vectors_path}")
+            self.categories = np.array([])
+            self.category_vectors = np.array([])
+
+    def suggest_categories(self, user_input: str, top_n: int = 5):
+        """ユーザー入力に基づいて、意味的に類似したカテゴリを提案する。"""
+        if self.category_vectors.size == 0:
+            return []
+        normalized_input = normalize_text(user_input)
+        input_vector = get_bert_embedding(normalized_input)
+        similarities = cosine_similarity(input_vector.reshape(1, -1), self.category_vectors).flatten()
+        top_n_indices = np.argsort(similarities)[-top_n:][::-1]
+        suggestions = [(self.categories[i], float(similarities[i])) for i in top_n_indices]
+        return suggestions
 
 # グローバル分類サービスインスタンス
 classification_service = ClassificationService() 
