@@ -9,6 +9,7 @@ __pycache__/
 frontend/dist/
 frontend/build/
 venv/
+data/
 *.exe
 *.asar
 *.dll
