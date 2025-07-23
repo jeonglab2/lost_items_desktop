@@ -26,6 +26,8 @@ class Item(Base):
     created_at = Column(String, nullable=False, comment="作成日時（TIMESTAMP WITH TIME ZONE）")
     updated_at = Column(String, nullable=False, comment="更新日時（TIMESTAMP WITH TIME ZONE）")
     vector = Column(ARRAY(Float), nullable=True, comment="品名・特徴の埋め込みベクトル（セマンティック検索用）")
+    expiry_date = Column(String, nullable=True, comment="消費期限（TIMESTAMP WITH TIME ZONE）")
+    storage_period = Column(String, nullable=True, comment="保管期間（例: 90日）")
     # TODO: TIMESTAMP型は実際のDB接続時にDateTime型へ修正
     # TODO: 必要に応じて全文検索用のベクトルカラムやインデックスも追加
 

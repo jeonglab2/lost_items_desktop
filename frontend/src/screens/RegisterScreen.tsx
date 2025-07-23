@@ -130,6 +130,9 @@ const RegisterScreen: React.FC = () => {
   // クレジットカード枚数（財布類のみ）
   const [creditCardCount, setCreditCardCount] = useState('');
 
+  // 消費期限（賞味期限）
+  const [expiryDate, setExpiryDate] = useState('');
+
   // 分類データの状態
   const [classifications, setClassifications] = useState<any>([]);
   const [suggestedCategory, setSuggestedCategory] = useState<any>(null);
@@ -366,16 +369,16 @@ const RegisterScreen: React.FC = () => {
       
       // 詳細な解決策を表示
       const solutionMessage = `
-${errorMessage}
+      ${errorMessage}
 
-解決方法:
-1. ブラウザのアドレスバー横のカメラアイコンをクリックして「許可」を選択
-2. ブラウザの設定 → プライバシーとセキュリティ → サイトの設定 → カメラで許可
-3. 他のアプリケーションでカメラを使用している場合は閉じてください
-4. HTTPS環境(localhostまたはhttps:// )でアクセスしてください
-5. デバイスにカメラが接続されているか確認してください
+      解決方法:
+      1. ブラウザのアドレスバー横のカメラアイコンをクリックして「許可」を選択
+      2. ブラウザの設定 → プライバシーとセキュリティ → サイトの設定 → カメラで許可
+      3. 他のアプリケーションでカメラを使用している場合は閉じてください
+      4. HTTPS環境(localhostまたはhttps:// )でアクセスしてください
+      5. デバイスにカメラが接続されているか確認してください
 
-詳細なエラー情報はブラウザのコンソール(F12)で確認できます。
+      詳細なエラー情報はブラウザのコンソール(F12)で確認できます。
       `;
       
       alert(solutionMessage);
@@ -516,11 +519,26 @@ ${errorMessage}
     if (!validateForm()) {
       return;
     }
+
+    // 食品の場合、消費期限必須
+    if (formData.category_large === '食料品類' && !expiryDate) {
+      alert('消費期限（または賞味期限）を入力してください。');
+      return;
+    }
+
+    // 保存期間の決定ロジック
+    const storagePeriod = getStoragePeriod();
     
     setIsSubmitting(true);
     try {
       // 1. まずテキスト情報のみ登録
-      const itemData = { ...formData, image_url: '' };
+      const itemData = { 
+        ...formData, 
+        image_url: '',
+        expiry_date: expiryDate,
+        storage_period: storagePeriod
+      };
+      console.log("itemData before post:", itemData);
       const res = await axios.post('http://localhost:8000/items', itemData);
       const item = res.data;
       
@@ -615,6 +633,19 @@ ${errorMessage}
   // 現金・財布の分類かどうかを判定
   const isCashOrWallet = () => {
     return formData.category_large === '現金' || formData.category_large === '財布類';
+  };
+
+  // 保存期間を計算する関数
+  const getStoragePeriod = () => {
+    if (formData.category_large === '食料品類' && expiryDate) {
+      const today = new Date();
+      const expiry = new Date(expiryDate);
+      const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays > 0 && diffDays <= 90) {
+        return expiryDate; // Changed to return formatted date string
+      }
+    }
+    return formData.storage_period || ''; // デフォルトは空（他のロジックがあればそちらを使う）
   };
 
   // 氏名の入力処理
@@ -947,7 +978,7 @@ ${errorMessage}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      拾得日時 *
+                      拾得日時 <span className="text-red-600">*</span>
                     </label>
                     <input
                       type="datetime-local"
@@ -961,7 +992,7 @@ ${errorMessage}
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      受付日時 *
+                      受付日時 <span className="text-red-600">*</span>
                     </label>
                     <input
                       type="datetime-local"
@@ -975,7 +1006,7 @@ ${errorMessage}
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      拾得場所 *
+                      拾得場所 <span className="text-red-600">*</span>
                     </label>
                     <input
                       type="text"
@@ -1012,7 +1043,7 @@ ${errorMessage}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      大分類 *
+                      大分類 <span className="text-red-600">*</span>
                     </label>
                     <select
                       value={formData.category_large}
@@ -1034,7 +1065,7 @@ ${errorMessage}
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      中分類 *
+                      中分類 <span className="text-red-600">*</span>
                     </label>
                     <select
                       value={formData.category_medium}
@@ -1052,7 +1083,7 @@ ${errorMessage}
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      品名 *
+                      品名 <span className="text-red-600">*</span>
                     </label>
                     <div className="relative">
                       <input
@@ -1111,7 +1142,7 @@ ${errorMessage}
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      色 *
+                      色 <span className="text-red-600">*</span>
                     </label>
                     <input
                       type="text"
@@ -1130,7 +1161,7 @@ ${errorMessage}
                   {/* 特徴・詳細欄 */}
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      特徴・詳細 *
+                      特徴・詳細 <span className="text-red-600">*</span>
                     </label>
                     <textarea
                       value={formData.features}
@@ -1301,6 +1332,24 @@ ${errorMessage}
                       )}
                     </div>
                   )}
+
+                  {/* 消費期限（賞味期限）入力欄（食品のみ表示） */}
+                  {formData.category_large === '食料品類' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        消費期限（または賞味期限） <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={expiryDate}
+                        onChange={e => setExpiryDate(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        disabled={!isInputEnabled}
+                      />
+                      <div className="text-xs text-gray-500 mt-1">※消費期限が90日以内の場合は保存期間もその日に設定されます</div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1344,7 +1393,7 @@ ${errorMessage}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            氏名(全角カタカナ) *
+                            氏名(全角カタカナ) <span className="text-red-600">*</span>
                           </label>
                           <input
                              type="text"
@@ -1358,7 +1407,7 @@ ${errorMessage}
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            電話番号(ハイフンなし, 半角英数) *
+                            電話番号(ハイフンなし, 半角英数) <span className="text-red-600">*</span>
                           </label>
                           <input
                              type="tel"

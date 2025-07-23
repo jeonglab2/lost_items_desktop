@@ -19,6 +19,8 @@ interface Item {
   claims_ownership: boolean;
   claims_reward: boolean;
   storage_location: string;
+  storage_period: string;
+  expiry_date: string;
   created_at: string;
   updated_at: string;
 }
@@ -87,8 +89,8 @@ const ManagementScreen: React.FC = () => {
 
     // 保管期限の計算（拾得から3ヶ月）
     items.forEach(item => {
-      const foundDate = new Date(item.found_datetime);
-      const expirationDate = new Date(foundDate.getTime() + 3 * 30 * 24 * 60 * 60 * 1000);
+        // getExpirationDate関数を呼び出し、ロジックを統一する
+        const expirationDate = getExpirationDate(item);
       
       if (expirationDate < now) {
         stats.expired++;
@@ -101,6 +103,7 @@ const ManagementScreen: React.FC = () => {
       stats.byCategory[category] = (stats.byCategory[category] || 0) + 1;
 
       // 月別統計
+      const foundDate = new Date(item.found_datetime);
       const month = foundDate.toISOString().slice(0, 7); // YYYY-MM
       stats.byMonth[month] = (stats.byMonth[month] || 0) + 1;
     });
@@ -108,24 +111,37 @@ const ManagementScreen: React.FC = () => {
     setStatistics(stats);
   };
 
-  const getExpirationDate = (foundDateTime: string) => {
-    const foundDate = new Date(foundDateTime);
-    return new Date(foundDate.getTime() + 3 * 30 * 24 * 60 * 60 * 1000);
+    const getExpirationDate = (item: Item) => {
+    // 優先順位: 1. storage_period, 2. expiry_date, 3. デフォルト90日
+    if (item.storage_period) {
+      return new Date(item.storage_period);
+    }
+    if (item.expiry_date) {
+      return new Date(item.expiry_date);
+    }
+    const foundDate = new Date(item.found_datetime);
+    // 90日後の日付を計算
+    return new Date(foundDate.getTime() + 90 * 24 * 60 * 60 * 1000);
   };
 
-  const getDaysUntilExpiration = (foundDateTime: string) => {
-    const expirationDate = getExpirationDate(foundDateTime);
+  const getDaysUntilExpiration = (item: Item) => {
+    const expirationDate = getExpirationDate(item);
     const now = new Date();
     const diffTime = expirationDate.getTime() - now.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
-  const getExpirationStatus = (foundDateTime: string) => {
-    const days = getDaysUntilExpiration(foundDateTime);
+  const getExpirationStatus = (item: Item) => {
+    const days = getDaysUntilExpiration(item);
     if (days < 0) return { status: 'expired', text: '期限切れ', color: 'text-red-600' };
     if (days <= 30) return { status: 'expiring', text: `${days}日後`, color: 'text-orange-600' };
     return { status: 'ok', text: `${days}日後`, color: 'text-green-600' };
   };
+
+    const formatDate = (dateString: string | undefined): string => {
+        if (!dateString) return '';
+        return new Date(dateString).toLocaleDateString('ja-JP');
+    };
 
   const handleBulkAction = async () => {
     if (!bulkAction || selectedItems.length === 0) {
@@ -194,12 +210,12 @@ const ManagementScreen: React.FC = () => {
     let filtered = items;
     
     if (showExpiredOnly) {
-      filtered = filtered.filter(item => getDaysUntilExpiration(item.found_datetime) < 0);
+        filtered = filtered.filter(item => getDaysUntilExpiration(item) < 0);
     }
     
     if (showExpiringSoon) {
-      filtered = filtered.filter(item => {
-        const days = getDaysUntilExpiration(item.found_datetime);
+        filtered = filtered.filter(item => {
+        const days = getDaysUntilExpiration(item);
         return days >= 0 && days <= 30;
       });
     }
@@ -367,9 +383,9 @@ const ManagementScreen: React.FC = () => {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-200">
                     {filteredItems.map((item) => {
-                      const expirationStatus = getExpirationStatus(item.found_datetime);
+                      const expirationStatus = getExpirationStatus(item);
                       return (
                         <tr key={item.item_id} className="hover:bg-gray-50">
                           <td className="px-4 py-3">
@@ -404,7 +420,7 @@ const ManagementScreen: React.FC = () => {
                               {expirationStatus.text}
                             </div>
                             <div className="text-xs text-gray-500">
-                              {getExpirationDate(item.found_datetime).toLocaleDateString('ja-JP')}
+                              {getExpirationDate(item).toLocaleDateString('ja-JP')}
                             </div>
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-900">
@@ -442,4 +458,4 @@ const ManagementScreen: React.FC = () => {
   );
 };
 
-export default ManagementScreen; 
+export default ManagementScreen;

@@ -8,7 +8,7 @@ if vendor_path not in sys.path:
 
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, Query, Request
 from sqlalchemy.orm import Session
-from typing import List, Dict
+from typing import List, Dict, Optional
 from pydantic import BaseModel
 from app.database import SessionLocal
 from app.models import Item, Facility
@@ -92,13 +92,17 @@ class ItemBase(BaseModel):
     claims_reward: bool = False
 
 class ItemCreate(ItemBase):
-    pass
+    expiry_date: Optional[str] = None
+    storage_period: Optional[str] = None
 
 class ItemRead(ItemBase):
     item_id: str
     storage_location: str
     created_at: str
     updated_at: str
+    expiry_date: Optional[str] = None
+    storage_period: Optional[str] = None
+
     class Config:
         orm_mode = True
 
