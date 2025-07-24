@@ -151,9 +151,9 @@ def create_item(item: ItemCreate, db: Session = Depends(get_db)):
     # 保管場所提案ロジック
     if item.claims_ownership:
         storage_location = f"{ymd}-所有権主張"
-    elif item.name == "傘":
+    elif item.category_large == "かさ類":
         storage_location = f"{ymd}-umb"
-    elif "食品" in item.features:
+    elif item.category_large == "食料品類":
         storage_location = f"{ymd}-冷蔵庫"
     else:
         # 同日の拾得物数を取得して保管箱番号を計算
