@@ -85,6 +85,10 @@
         "to": "yolov8n.pt"
       },
       {
+        "from": "../backend/yolov9-e.pt",
+        "to": "yolov9-e.pt"
+      },
+      {
         "from": "../docs",
         "to": "docs"
       },

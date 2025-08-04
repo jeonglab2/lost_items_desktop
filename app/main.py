@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from typing import List, Dict, Optional
 from pydantic import BaseModel
 from app.database import SessionLocal
-from app.models import Item, Facility
+from app.model import Item, Facility
 from app.ai_engine import ai_engine
 from app.security import security_manager
 from app.logging_config import logging_config

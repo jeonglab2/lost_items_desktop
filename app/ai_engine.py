@@ -1,14 +1,8 @@
 import os
 import sys
-
-# vendorディレクトリをimportパスに追加
-vendor_path = os.path.join(os.path.dirname(__file__), 'vendor')
-if vendor_path not in sys.path:
-    sys.path.insert(0, vendor_path)
-
 import json
 import numpy as np
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 from PIL import Image
 import torch
 from transformers import pipeline
@@ -16,11 +10,17 @@ from sentence_transformers import SentenceTransformer
 import easyocr
 from ultralytics import YOLO
 import cv2
+from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import cosine_similarity
 import logging
 import mojimoji
 import re
 from app.classification_service import SemanticClassifier
+
+# vendorディレクトリをimportパスに追加
+vendor_path = os.path.join(os.path.dirname(__file__), 'vendor')
+if vendor_path not in sys.path:
+    sys.path.insert(0, vendor_path)
 
 # ログ設定
 logging.basicConfig(level=logging.INFO)
@@ -41,20 +41,19 @@ class AIEngine:
                 # ANTIALIASが存在しない場合、LANCZOSを使用
                 PIL.Image.ANTIALIAS = PIL.Image.LANCZOS
             
-            self.ocr_reader = easyocr.Reader(['ja', 'en'])
+            self.ocr_reader = easyocr.Reader(['ja', 'en'], gpu=torch.cuda.is_available())
         except Exception as e:
             logger.warning(f"EasyOCRの初期化に失敗: {e}")
             self.ocr_reader = None
         
         # YOLOモデルの初期化（物体検出用）
         try:
-            # backendディレクトリのyolov8n.ptを参照
             model_path = 'backend/yolov8n.pt'
             if os.path.exists(model_path):
                 self.yolo_model = YOLO(model_path)
             else:
-                logger.warning(f"YOLOモデルファイルが見つかりません: {model_path}")
-                self.yolo_model = None
+                logger.warning(f"YOLOモデルファイルが見つかりません: {model_path}。自動ダウンロードを試みます。")
+                self.yolo_model = YOLO(model_path) # なければ自動でダウンロード
         except Exception as e:
             logger.warning(f"YOLOモデルの読み込みに失敗: {e}")
             self.yolo_model = None
@@ -126,23 +125,41 @@ class AIEngine:
             # 3. 色分析（物体領域に限定）
             dominant_colors = self._analyze_colors(image, detected_objects)
             
-            # 4. 特徴抽出
-            features = self._extract_features(image, detected_objects, extracted_text)
+            # 4. 物体検出の結果を最優先で分類する
+            if detected_objects:
+                # _classify_by_objects を使って直接分類
+                classification_result = self._classify_by_objects(detected_objects)
+                
+                # 検出された物体名とテキストを特徴としてまとめる
+                object_names = [obj["class_name"] for obj in detected_objects]
+                features = f"検出物体: {', '.join(object_names)}, 抽出テキスト: {extracted_text}"
+                
+                final_result = {
+                    "category_large": classification_result.get("large_category", "その他"),
+                    "category_medium": classification_result.get("medium_category", "その他"),
+                    "name": classification_result.get("name", "不明"),
+                    "features": features,
+                    "color": dominant_colors[0] if dominant_colors else "不明",
+                    "confidence": classification_result.get("score", 0.0)
+                }
+
+            # 5. 物体検出できなかった場合、テキスト情報で分類を試みる
+            elif extracted_text:
+                classification_result = self.classify_with_new_system(extracted_text)
+                final_result = {
+                    "category_large": classification_result.get("large_category_name_ja", "その他"),
+                    "category_medium": classification_result.get("medium_category_name_ja", "その他"),
+                    "name": classification_result.get("matched_keywords")[0]["keyword"] if classification_result.get("matched_keywords") else "不明",
+                    "features": f"抽出テキスト: {extracted_text}",
+                    "color": dominant_colors[0] if dominant_colors else "不明",
+                    "confidence": classification_result.get("confidence", 0.0)
+                }
             
-            # 5. 分類提案
-            classification_result = self._classify_item(features, detected_objects)
-            
-            # 6. 信頼度計算
-            confidence = self._calculate_confidence(classification_result, features, detected_objects)
-            
-            return {
-                "category_large": classification_result.get("large_category", "その他"),
-                "category_medium": classification_result.get("medium_category", "その他"),
-                "name": classification_result.get("name", "不明"),
-                "features": features,
-                "color": dominant_colors[0] if dominant_colors else "不明",
-                "confidence": confidence
-            }
+            # 6. 何も情報がない場合
+            else:
+                final_result = self._get_fallback_result()
+
+            return final_result
             
         except Exception as e:
             logger.error(f"画像認識エラー: {e}")
